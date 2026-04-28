@@ -1,7 +1,7 @@
 ﻿using Practice.Models.Entities;
-using Practise.Models.Entities;
+using Practice.Models.Entities;
 
-namespace Practise.Models.Entities
+namespace Practice.Models.Entities
 {
     public class Block
     {

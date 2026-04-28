@@ -9,7 +9,7 @@ using Practice.Data;
 
 #nullable disable
 
-namespace Practise.Migrations
+namespace Practice.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     [Migration("20260427090903_InitialCreate")]
@@ -55,7 +55,7 @@ namespace Practise.Migrations
                     b.ToTable("BlockStats");
                 });
 
-            modelBuilder.Entity("Practise.Models.Entities.Block", b =>
+            modelBuilder.Entity("Practice.Models.Entities.Block", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -95,7 +95,7 @@ namespace Practise.Migrations
                     b.ToTable("Blocks");
                 });
 
-            modelBuilder.Entity("Practise.Models.Entities.Route", b =>
+            modelBuilder.Entity("Practice.Models.Entities.Route", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -136,7 +136,7 @@ namespace Practise.Migrations
                     b.ToTable("Routes");
                 });
 
-            modelBuilder.Entity("Practise.Models.Entities.User", b =>
+            modelBuilder.Entity("Practice.Models.Entities.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -173,7 +173,7 @@ namespace Practise.Migrations
 
             modelBuilder.Entity("Practice.Models.Entities.BlockStat", b =>
                 {
-                    b.HasOne("Practise.Models.Entities.Block", "Block")
+                    b.HasOne("Practice.Models.Entities.Block", "Block")
                         .WithMany("BlockStats")
                         .HasForeignKey("BlockId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -182,9 +182,9 @@ namespace Practise.Migrations
                     b.Navigation("Block");
                 });
 
-            modelBuilder.Entity("Practise.Models.Entities.Block", b =>
+            modelBuilder.Entity("Practice.Models.Entities.Block", b =>
                 {
-                    b.HasOne("Practise.Models.Entities.User", "Owner")
+                    b.HasOne("Practice.Models.Entities.User", "Owner")
                         .WithMany("Blocks")
                         .HasForeignKey("OwnerId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -193,9 +193,9 @@ namespace Practise.Migrations
                     b.Navigation("Owner");
                 });
 
-            modelBuilder.Entity("Practise.Models.Entities.Route", b =>
+            modelBuilder.Entity("Practice.Models.Entities.Route", b =>
                 {
-                    b.HasOne("Practise.Models.Entities.User", "User")
+                    b.HasOne("Practice.Models.Entities.User", "User")
                         .WithMany("Routes")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -204,12 +204,12 @@ namespace Practise.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Practise.Models.Entities.Block", b =>
+            modelBuilder.Entity("Practice.Models.Entities.Block", b =>
                 {
                     b.Navigation("BlockStats");
                 });
 
-            modelBuilder.Entity("Practise.Models.Entities.User", b =>
+            modelBuilder.Entity("Practice.Models.Entities.User", b =>
                 {
                     b.Navigation("Blocks");
 

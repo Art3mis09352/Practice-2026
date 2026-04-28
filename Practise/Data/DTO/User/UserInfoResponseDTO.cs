@@ -1,6 +1,6 @@
-﻿using Practise.Models.Entities;
+﻿using Practice.Models.Entities;
 
-namespace Practise.Data.DTO.User
+namespace Practice.Data.DTO.User
 {
     public class UserInfoResponseDTO
     {

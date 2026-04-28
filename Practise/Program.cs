@@ -3,7 +3,7 @@
 using Microsoft.EntityFrameworkCore;
 using Practice.Data;
 
-namespace Practise
+namespace Practice
 {
     public class Program
     {

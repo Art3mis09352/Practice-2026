@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Practice.Models.Entities;
-using Practise.Models.Entities;
-using Route = Practise.Models.Entities.Route;
+using Practice.Models.Entities;
+using Route = Practice.Models.Entities.Route;
 
 
 namespace Practice.Data

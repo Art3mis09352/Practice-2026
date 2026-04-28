@@ -1,4 +1,4 @@
-﻿namespace Practise.Models.Entities
+﻿namespace Practice.Models.Entities
 {
     public class Route
     {

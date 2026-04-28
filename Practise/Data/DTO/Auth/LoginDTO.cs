@@ -1,7 +1,7 @@
 ﻿using Swashbuckle.AspNetCore.Annotations;
 using System.ComponentModel.DataAnnotations;
 
-namespace Practise.Data.DTO.Auth
+namespace Practice.Data.DTO.Auth
 {
     public class LoginDTO
     

@@ -2,11 +2,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Practice.Data;
-using Practise.Data.DTO.Auth;
-using Practise.Models.Entities;
+using Practice.Data.DTO.Auth;
+using Practice.Models.Entities;
 using Swashbuckle.AspNetCore.Annotations;
 
-namespace Practise.Controllers
+namespace Practice.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]

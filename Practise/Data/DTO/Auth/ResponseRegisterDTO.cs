@@ -1,6 +1,6 @@
-﻿using Practise.Models.Entities;
+﻿using Practice.Models.Entities;
 
-namespace Practise.Data.DTO.Auth
+namespace Practice.Data.DTO.Auth
 {
     public class ResponseRegisterDTO
     {

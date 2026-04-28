@@ -1,4 +1,4 @@
-﻿using Practise.Models.Entities;
+﻿using Practice.Models.Entities;
 
 namespace Practice.Models.Entities
 {
