@@ -21,7 +21,7 @@
         public string? ShareLink { get; set; }
 
 
-        // Navigation Properties
+        
         public User? User { get; set; }
     }
 }

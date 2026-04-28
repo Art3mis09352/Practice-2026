@@ -12,7 +12,7 @@ using Practice.Data;
 namespace Practise.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260425030438_InitialCreate")]
+    [Migration("20260427090903_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -151,8 +151,11 @@ namespace Practise.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Phone")
+                    b.Property<string>("Password")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Phone")
                         .HasColumnType("text");
 
                     b.Property<string>("Role")
