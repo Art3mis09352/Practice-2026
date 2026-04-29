@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Practice.Models.Entities;
 using Practice.Models.Entities;
 using Route = Practice.Models.Entities.Route;
@@ -6,7 +8,7 @@ using Route = Practice.Models.Entities.Route;
 
 namespace Practice.Data
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : IdentityDbContext<User, IdentityRole, string>
     {
 
         
@@ -21,11 +23,12 @@ namespace Practice.Data
         public DbSet<BlockStat> BlockStats => Set<BlockStat>();
 
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder) { 
+        protected override void OnModelCreating(ModelBuilder modelBuilder) {
 
-            modelBuilder.Entity<User>()
-            .Property(u => u.Role)
-            .HasConversion<string>();
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<User>(entity =>
+            { entity.Property(x => x.CreatedAt); });
 
         }
     }

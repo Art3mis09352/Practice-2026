@@ -8,6 +8,6 @@ namespace Practice.Data.DTO.User
         public string Email { get; set; } = string.Empty;
         public string Username { get; set; } = string.Empty;
         public string? Phone { get; set; }
-        public UserRole Role { get; set; }
+        public IList<string> Roles { get; set; } = new List<string>();
     }
 }

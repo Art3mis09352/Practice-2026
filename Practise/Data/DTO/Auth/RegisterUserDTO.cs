@@ -1,10 +1,12 @@
-﻿using Swashbuckle.AspNetCore.Annotations;
+﻿
+using Practice.Models.Entities;
+using Swashbuckle.AspNetCore.Annotations;
 using System.ComponentModel.DataAnnotations;
+
 
 namespace Practice.Data.DTO.Auth
 {
-    public class LoginDTO
-    
+    public class RegisterUserDto
     {
         [Required(ErrorMessage = "Email обязателен")]
         [EmailAddress(ErrorMessage = "Некорректный формат email")]
@@ -15,6 +17,13 @@ namespace Practice.Data.DTO.Auth
         [MinLength(8, ErrorMessage = "Пароль должен содержать минимум 8 символов")]
         [SwaggerSchema("Пароль пользователя. В реальном проекте хранится только хэш пароля.", Nullable = false)]
         public string Password { get; set; } = string.Empty;
+
+        [Phone(ErrorMessage = "Некорректный формат телефона")]
+        [SwaggerSchema("Номер телефона пользователя", Nullable = true)]
+        public string? Phone { get; set; }
+
+        [SwaggerSchema("Имя пользователя")]
+        public string? Username { get; set; }
 
         
     }
