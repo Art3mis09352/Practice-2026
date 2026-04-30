@@ -1,7 +1,6 @@
 ﻿// 5) Swagger/AuthorizeOperationFilter.cs
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi;
-using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Practice.Swagger
@@ -33,17 +32,13 @@ namespace Practice.Swagger
 
             operation.Security.Add(new OpenApiSecurityRequirement
             {
-                [
-                    new OpenApiSecurityScheme
-                    {
-                        Reference = new OpenApiReference
-                        {
-                            Type = ReferenceType.SecurityScheme,
-                            Id = "Bearer"
-                        }
-                    }
-                ] = Array.Empty<string>()
+                {
+                    new OpenApiSecuritySchemeReference("Bearer"),
+                    new List<string>()
+                }
             });
+
+
 
             operation.Responses.TryAdd("401", new OpenApiResponse { Description = "Unauthorized" });
             operation.Responses.TryAdd("403", new OpenApiResponse { Description = "Forbidden" });

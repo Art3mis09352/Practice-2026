@@ -1,7 +1,10 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Practice.Data;
 using Practice.Data.DTO.Auth;
+using Practice.Data.DTO.User;
 using Practice.Models.Entities;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -9,52 +12,36 @@ namespace Practice.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles="Admin")]
     public class AdminController : ControllerBase
     {
-        private readonly AppDbContext _dbContext;
+        private readonly UserManager<User> _userManager;
 
-        public AdminController(AppDbContext dbContext)
+        public AdminController(UserManager<User> userManager)
         {
-            _dbContext = dbContext;
+            _userManager = userManager;
         }
 
-        [HttpPatch("ChangeRole")]
-        [SwaggerOperation(
-            Summary = "Смена роли",
-            Description = "Админ меняет роль"
-        )]
-        [ProducesResponseType(typeof(ResponseRegisterDTO), StatusCodes.Status204NoContent)]
-        public async Task<ActionResult> ChangeUserRole(int userId, string newRole)
-        {
-            var user = await _dbContext.Users.FindAsync(userId);
-            if (user == null)
-            {
-                return NotFound("Пользователь не найден.");
-            }
-            if (!Enum.TryParse(newRole, true, out UserRole parsedRole))
-            {
-                return BadRequest("Недопустимая роль.");
-            }
-            user.Role = parsedRole;
-            _dbContext.Users.Update(user);
-            await _dbContext.SaveChangesAsync();
-            return NoContent();
-        }
+        
         [HttpDelete("DeleteUser")]
         [SwaggerOperation(
             Summary = "удалить пользователя",
             Description = "Админ удаляет пользователя"
         )]
         [ProducesResponseType(typeof(ResponseRegisterDTO), StatusCodes.Status204NoContent)]
-        public async Task<ActionResult> DeleteUser(int userId)
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult> DeleteUser(string id)
         {
-            var user = await _dbContext.Users.FindAsync(userId);
+            var user = await _userManager.FindByIdAsync(id);
             if (user == null)
             {
                 return NotFound("Пользователь не найден.");
             }
-            _dbContext.Users.Remove(user);
-            await _dbContext.SaveChangesAsync();
+            var result = await _userManager.DeleteAsync(user);
+            if (!result.Succeeded)
+            {
+                return BadRequest("Не удалось удалить пользователя.");
+            }
             return NoContent();
 
         }

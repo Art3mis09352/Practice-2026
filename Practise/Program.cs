@@ -63,6 +63,30 @@ namespace Practice
                         ValidAudience = builder.Configuration["Jwt:Audience"],
                         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
                     };
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnMessageReceived = context =>
+                        {
+                            Console.WriteLine($"JWT header: {context.Request.Headers.Authorization}");
+                            return Task.CompletedTask;
+                        },
+                        OnAuthenticationFailed = context =>
+                        {
+                            Console.WriteLine($"JWT auth failed: {context.Exception.Message}");
+                            return Task.CompletedTask;
+                        },
+                        OnTokenValidated = context =>
+                        {
+                            var name = context.Principal?.Identity?.Name;
+                            Console.WriteLine($"JWT ok for: {name}");
+                            return Task.CompletedTask;
+                        },
+                        OnChallenge = context =>
+                        {
+                            Console.WriteLine($"JWT challenge: {context.Error} | {context.ErrorDescription}");
+                            return Task.CompletedTask;
+                        }
+                    };
                 });
             builder.Services.AddAuthorization();
 
@@ -71,22 +95,23 @@ namespace Practice
             builder.Services.AddSwaggerGen(options =>
             {
                 options.EnableAnnotations();
-                options.OperationFilter<AuthorizeOperationFilter>();
 
-                options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                options.AddSecurityDefinition("bearer", new OpenApiSecurityScheme
                 {
                     Name = "Authorization",
                     Type = SecuritySchemeType.Http,
                     Scheme = "bearer",
                     BearerFormat = "JWT",
                     In = ParameterLocation.Header,
-                    Description = "Bearer {token}"
+                    Description = "JWT Authorization header using the Bearer scheme."
                 });
 
-
-
-
+                options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+                {
+                    [new OpenApiSecuritySchemeReference("bearer", document)] = []
+                });
             });
+
 
             builder.Services.AddControllers().AddJsonOptions(options =>
             {
@@ -120,7 +145,7 @@ namespace Practice
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
-                app.MapOpenApi();
+                
                 app.UseSwagger();
                 app.UseSwaggerUI();
 

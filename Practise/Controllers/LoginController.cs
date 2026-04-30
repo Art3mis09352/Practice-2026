@@ -5,7 +5,6 @@ using Practice.Data.DTO.Auth;
 using Practice.Models.Entities;
 using Swashbuckle.AspNetCore.Annotations;
 using Microsoft.EntityFrameworkCore;
-using Swashbuckle.Swagger.Annotations;
 using Microsoft.AspNetCore.Identity;
 using Practice.Services;
 
