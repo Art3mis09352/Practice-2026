@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Practice.Data;
 using Practice.Data.DTO.Auth;
 using Practice.Data.DTO.User;
@@ -16,10 +17,12 @@ namespace Practice.Controllers
     public class AdminController : ControllerBase
     {
         private readonly UserManager<User> _userManager;
+        private readonly AppDbContext _dbContext;
 
-        public AdminController(UserManager<User> userManager)
+        public AdminController(UserManager<User> userManager, AppDbContext dbContext)
         {
             _userManager = userManager;
+            _dbContext = dbContext;
         }
 
         
@@ -45,5 +48,22 @@ namespace Practice.Controllers
             return NoContent();
 
         }
+
+        [HttpPatch("blocks/{id}/approve")]
+        public async Task<ActionResult> ApproveBlock(int id)
+        {
+            var block = await _dbContext.Blocks.FindAsync(id);
+            if (block == null)
+            {
+                return NotFound("Точка не найдена.");
+            }
+
+            block.IsApproved = true;
+            await _dbContext.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+
     }
 }

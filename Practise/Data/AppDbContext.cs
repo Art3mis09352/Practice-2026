@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Practice.Data.Configurations;
 using Practice.Models.Entities;
 using Practice.Models.Entities;
 using Route = Practice.Models.Entities.Route;
@@ -21,15 +22,25 @@ namespace Practice.Data
         public DbSet<Route> Routes => Set<Route>();
         public DbSet<Block> Blocks => Set<Block>();
         public DbSet<BlockStat> BlockStats => Set<BlockStat>();
+        public DbSet<RouteDay> RouteDays => Set<RouteDay>();
+        public DbSet<RouteDayBlock> RouteDayBlocks => Set<RouteDayBlock>();
+        
 
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder) {
-
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Entity<User>(entity =>
-            { entity.Property(x => x.CreatedAt); });
+            modelBuilder.ApplyConfiguration(new RouteConfiguration());
+            modelBuilder.ApplyConfiguration(new RouteDayConfiguration());
+            modelBuilder.ApplyConfiguration(new BlockConfiguration());
+            modelBuilder.ApplyConfiguration(new RouteDayConfiguration());
+            
 
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.Property(x => x.CreatedAt);
+            });
         }
     }
 }
