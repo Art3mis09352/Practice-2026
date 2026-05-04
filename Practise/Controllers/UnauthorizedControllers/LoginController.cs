@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Practice.Services;
 
-namespace Practice.Controllers
+namespace Practice.Controllers.UnauthorizedControllers
 {
     [Route("api/[controller]")]
     [ApiController]

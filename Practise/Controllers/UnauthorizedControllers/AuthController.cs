@@ -8,7 +8,7 @@ using Practice.Models.Entities;
 using Practice.Services;
 using Swashbuckle.AspNetCore.Annotations;
 
-namespace Practice.Controllers
+namespace Practice.Controllers.UnauthorizedControllers
 {
     [Route("api/[controller]")]
     [ApiController]

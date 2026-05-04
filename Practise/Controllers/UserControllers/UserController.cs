@@ -9,7 +9,7 @@ using Practice.Models.Entities;
 using Swashbuckle.AspNetCore.Annotations;
 using System.Security.Claims;
 
-namespace Practice.Controllers
+namespace Practice.Controllers.UserControllers
 {
     [Route("api/[controller]")]
     [ApiController]

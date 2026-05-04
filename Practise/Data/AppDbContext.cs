@@ -34,7 +34,7 @@ namespace Practice.Data
             modelBuilder.ApplyConfiguration(new RouteConfiguration());
             modelBuilder.ApplyConfiguration(new RouteDayConfiguration());
             modelBuilder.ApplyConfiguration(new BlockConfiguration());
-            modelBuilder.ApplyConfiguration(new RouteDayConfiguration());
+            modelBuilder.ApplyConfiguration(new RouteDayBlockConfiguration());
             
 
             modelBuilder.Entity<User>(entity =>
