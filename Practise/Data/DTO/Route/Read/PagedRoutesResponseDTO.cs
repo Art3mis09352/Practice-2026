@@ -1,5 +1,5 @@
 ﻿// Data/DTO/Route/PagedRoutesResponseDTO.cs
-namespace Practice.Data.DTO.Route
+namespace Practice.Data.DTO.Route.Read
 {
     public class PagedRoutesResponseDTO
     {

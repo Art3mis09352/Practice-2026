@@ -8,6 +8,7 @@ using Microsoft.OpenApi;
 using Practice.Data;
 using Practice.Models.Entities;
 using Practice.Services;
+using Practice.Services.Users;
 using Practice.Swagger;
 using System.Text;
 
@@ -43,7 +44,8 @@ namespace Practice
 
             builder.Services.AddScoped<JwtTokenService>();
 
-            
+            builder.Services.AddScoped<IUserRouteService, UserRouteService>();
+
             builder.Services
                 .AddAuthentication(options =>
                 {
@@ -125,6 +127,8 @@ namespace Practice
 
             using (var scope = app.Services.CreateScope())
             {
+                //var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                //db.Database.Migrate();
                 var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
                 var roles = new[] { "Admin", "User", "Owner"};

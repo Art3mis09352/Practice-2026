@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Practice.Data.Configurations;
 using Practice.Models.Entities;
-using Practice.Models.Entities;
 using Route = Practice.Models.Entities.Route;
 
 

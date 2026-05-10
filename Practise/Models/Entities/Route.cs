@@ -11,6 +11,7 @@ namespace Practice.Models.Entities
         public string Title { get; set; } = string.Empty;
 
         public string? Description { get; set; }
+        public decimal? Budget { get; set; }
 
         public DateTime StartDate { get; set; }
 

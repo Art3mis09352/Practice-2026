@@ -1,5 +1,5 @@
 ﻿// Data/DTO/Route/RouteDayBlockInfoDTO.cs
-namespace Practice.Data.DTO.Route
+namespace Practice.Data.DTO.Route.Read
 {
     public class RouteDayBlockInfoDTO
     {

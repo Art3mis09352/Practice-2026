@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Practice.Data;
-using Practice.Data.DTO.Route;
+using Practice.Data.DTO.Route.Read;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Practice.Controllers.UnauthorizedControllers

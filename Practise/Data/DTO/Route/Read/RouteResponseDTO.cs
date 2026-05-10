@@ -1,5 +1,5 @@
 ﻿// Data/DTO/Route/RouteResponseDTO.cs
-namespace Practice.Data.DTO.Route
+namespace Practice.Data.DTO.Route.Read
 {
     public class RouteResponseDTO
     {
@@ -9,6 +9,7 @@ namespace Practice.Data.DTO.Route
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public bool IsPublic { get; set; }
+        public decimal? Budget { get; set; }
         public string? ShareToken { get; set; }
         public IReadOnlyCollection<RouteDayInfoDTO> Days { get; set; } = Array.Empty<RouteDayInfoDTO>();
     }

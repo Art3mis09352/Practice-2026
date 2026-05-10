@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using Practice.Models.Entities;
+using User = Practice.Models.Entities.User;
 
 namespace Practice.Services
 {

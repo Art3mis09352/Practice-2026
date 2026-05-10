@@ -38,6 +38,8 @@ namespace Practice.Data.Configurations
             builder.HasIndex(x => x.ShareToken)
                 .IsUnique()
                 .HasFilter("\"ShareToken\" IS NOT NULL");
+            builder.Property(x => x.Budget)
+                .HasPrecision(18, 2);
 
             // Navigation Properties
             builder.HasOne(x => x.User)

@@ -1,5 +1,5 @@
 ﻿// Data/DTO/Route/RoutePreviewDTO.cs
-namespace Practice.Data.DTO.Route
+namespace Practice.Data.DTO.Route.Read
 {
     public class RoutePreviewDTO
     {
@@ -10,6 +10,7 @@ namespace Practice.Data.DTO.Route
         public DateTime EndDate { get; set; }
         public int DaysCount { get; set; }
         public int PointsCount { get; set; }
+        public decimal? Budget { get; set; }
         public string? FirstCity { get; set; }
     }
 }
