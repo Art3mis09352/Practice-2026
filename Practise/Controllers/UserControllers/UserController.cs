@@ -44,13 +44,14 @@ namespace Practice.Controllers.UserControllers
             {
                 return NotFound("Пользователь не найден.");
             }
-
+            var roles = await _userManager.GetRolesAsync(user);
             var response = new UserInfoResponseDTO
             {
                 Id = user.Id,
                 Email = user.Email ?? string.Empty,
                 Username = user.UserName ?? string.Empty,
-                Phone = user.PhoneNumber
+                Phone = user.PhoneNumber,
+                Roles = roles
             };
             return Ok(response);
         }
@@ -63,9 +64,9 @@ namespace Practice.Controllers.UserControllers
             Summary = "меняем номер телефона",
             Description = "меняем номер телефона."
         )]
-        [ProducesResponseType(typeof(UserDTO), StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(UpdateUserProfileDTO), StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult> UpdateUserInfo([FromBody] UserDTO dto)
+        public async Task<ActionResult> UpdateUserInfo([FromBody] UpdateUserProfileDTO dto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); 
             if (string.IsNullOrEmpty(userId)) {

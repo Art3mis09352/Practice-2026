@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Practice.Data;
 using Practice.Data.DTO.Block;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Practice.Controllers
 {
@@ -17,31 +18,31 @@ namespace Practice.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<BlockPreviewDTO>>> GetBlocks(
-            [FromQuery] string? city,
-            [FromQuery] string? category,
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 10)
+        [SwaggerOperation(Summary = "Получение списка блоков", Description = "Возвращает список блоков с возможностью фильтрации по городу и категории.")]
+        public async Task<ActionResult<PagedBlocksResponseDTO>> GetBlocks([FromQuery] GetBlocksQueryDTO queryDto)
         {
-            if (page < 1) page = 1;
-            if (pageSize < 1) pageSize = 10;
+            var page = queryDto.Page < 1 ? 1 : queryDto.Page;
+            var pageSize = queryDto.PageSize < 1 ? 10 : queryDto.PageSize;
             if (pageSize > 50) pageSize = 50;
 
             var query = _dbContext.Blocks
+                .AsNoTracking()
                 .Where(b => b.IsApproved)
                 .AsQueryable();
 
-            if (!string.IsNullOrWhiteSpace(city))
+            if (!string.IsNullOrWhiteSpace(queryDto.City))
             {
-                query = query.Where(b => b.City == city);
+                query = query.Where(b => b.City == queryDto.City);
             }
 
-            if (!string.IsNullOrWhiteSpace(category))
+            if (!string.IsNullOrWhiteSpace(queryDto.Category))
             {
-                query = query.Where(b => b.Category == category);
+                query = query.Where(b => b.Category == queryDto.Category);
             }
 
-            var blocks = await query
+            var totalCount = await query.CountAsync();
+
+            var items = await query
                 .OrderBy(b => b.Title)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -58,7 +59,13 @@ namespace Practice.Controllers
                 })
                 .ToListAsync();
 
-            return Ok(blocks);
+            return Ok(new PagedBlocksResponseDTO
+            {
+                Items = items,
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = totalCount
+            });
         }
     }
 }

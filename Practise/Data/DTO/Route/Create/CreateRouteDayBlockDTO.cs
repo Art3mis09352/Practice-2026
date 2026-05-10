@@ -8,10 +8,10 @@ namespace Practice.Data.DTO.Route.Create
     public class CreateRouteDayBlockDTO
     {
         [Required]
-        [Range(1, int.MaxValue)]
+        [Range(1, int.MaxValue, ErrorMessage = "BlockId должен быть больше 0.")]
         public int BlockId { get; set; }
 
-        [Range(1, int.MaxValue)]
+        [Range(1, int.MaxValue, ErrorMessage = "OrderInDay должен быть больше 0.")]
         public int OrderInDay { get; set; }
 
         [MaxLength(2000)]

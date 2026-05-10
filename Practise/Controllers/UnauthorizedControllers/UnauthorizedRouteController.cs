@@ -76,7 +76,8 @@ namespace Practice.Controllers.UnauthorizedControllers
                             })
                             .ToList()
                     })
-                    .ToList()
+                    .ToList(),
+                Budget = route.Budget
             };
 
             return Ok(result);
@@ -140,7 +141,8 @@ namespace Practice.Controllers.UnauthorizedControllers
                         .SelectMany(d => d.RouteDayBlocks)
                         .Where(rdb => rdb.Block != null)
                         .Select(rdb => rdb.Block!.City)
-                        .FirstOrDefault()
+                        .FirstOrDefault(),
+                    Budget = route.Budget
                 })
                 .ToListAsync();
 

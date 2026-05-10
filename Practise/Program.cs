@@ -45,6 +45,21 @@ namespace Practice
             builder.Services.AddScoped<JwtTokenService>();
 
             builder.Services.AddScoped<IUserRouteService, UserRouteService>();
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("FrontendCorsPolicy", policy =>
+                {
+                    policy
+                        .WithOrigins(
+                            "http://localhost:5173",
+                            "http://localhost:4173",
+                            "https://localhost:5173",
+                            "https://localhost:4173")
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
+                });
+            });
 
             builder.Services
                 .AddAuthentication(options =>
@@ -69,7 +84,18 @@ namespace Practice
                     {
                         OnMessageReceived = context =>
                         {
-                            Console.WriteLine($"JWT header: {context.Request.Headers.Authorization}");
+                            if (context.Request.Cookies.TryGetValue("auth", out var token))
+                            {
+                                context.Token = token;
+                                return Task.CompletedTask;
+                            }
+
+                            var authHeader = context.Request.Headers.Authorization.ToString();
+                            if (!string.IsNullOrWhiteSpace(authHeader) && authHeader.StartsWith("Bearer "))
+                            {
+                                context.Token = authHeader["Bearer ".Length..].Trim();
+                            }
+
                             return Task.CompletedTask;
                         },
                         OnAuthenticationFailed = context =>
@@ -88,6 +114,7 @@ namespace Practice
                             Console.WriteLine($"JWT challenge: {context.Error} | {context.ErrorDescription}");
                             return Task.CompletedTask;
                         }
+
                     };
                 });
             builder.Services.AddAuthorization();
@@ -157,6 +184,7 @@ namespace Practice
 
             app.UseHttpsRedirection();
 
+            app.UseCors("FrontendCorsPolicy");
 
             app.UseAuthentication();
             app.UseAuthorization();

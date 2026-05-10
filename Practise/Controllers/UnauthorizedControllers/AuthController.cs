@@ -25,6 +25,20 @@ namespace Practice.Controllers.UnauthorizedControllers
             _configuration = configuration;
         }
 
+        private void SetAuthCookie(string jwt)
+        {
+            Response.Cookies.Append("auth", jwt, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTimeOffset.UtcNow.AddHours(12),
+                Path = "/"
+            });
+        }
+
+
+
         [HttpPost("register")]
         [SwaggerOperation(
             Summary = "Регистрация пользователя",
@@ -69,6 +83,7 @@ namespace Practice.Controllers.UnauthorizedControllers
             }
 
             var token = await _jwtTokenService.GenerateTokenAsync(user);
+            SetAuthCookie(token);
 
             return CreatedAtAction(nameof(Register), new { id = user.Id }, new ResponseRegisterDTO
             {
@@ -77,7 +92,7 @@ namespace Practice.Controllers.UnauthorizedControllers
                 Username = user.UserName,
                 Phone = user.PhoneNumber,
                 Roles = new List<string> { role },
-                Token = token
+                
             });
         }
 
@@ -136,7 +151,7 @@ namespace Practice.Controllers.UnauthorizedControllers
             }
 
             var token = await _jwtTokenService.GenerateTokenAsync(user);
-
+            SetAuthCookie(token);
             return CreatedAtAction(nameof(Register), new { id = user.Id }, new ResponseRegisterDTO
             {
                 Id = user.Id,
@@ -144,8 +159,24 @@ namespace Practice.Controllers.UnauthorizedControllers
                 Username = user.UserName,
                 Phone = user.PhoneNumber,
                 Roles = new List<string> { role },
-                Token = token
+                
             });
+        }
+        [HttpPost]
+        [SwaggerOperation(
+            Summary = "logout",
+            Description = "Выход пользователя из системы."
+        )]
+        public IActionResult Logout()
+        {
+            Response.Cookies.Delete("auth", new CookieOptions
+            {
+                Path = "/",
+                Secure = true,
+                SameSite = SameSiteMode.None
+            });
+
+            return NoContent();
         }
     }
 }

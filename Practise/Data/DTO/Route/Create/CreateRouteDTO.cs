@@ -19,11 +19,12 @@ namespace Practice.Data.DTO.Route.Create
 
         [Required]
         public DateTime EndDate { get; set; }
+        [Range(0, double.MaxValue, ErrorMessage = "Бюджет не может быть отрицательным.")]
         public decimal? Budget { get; set; }
 
         public bool IsPublic { get; set; } = false;
-
-        [MinLength(1)]
+        [Required]
+        [MinLength(1, ErrorMessage = "Маршрут должен содержать хотя бы один день.")]
         public List<CreateRouteDayDTO> Days { get; set; } = new();
     }
 }

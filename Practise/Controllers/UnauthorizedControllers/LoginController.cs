@@ -25,6 +25,21 @@ namespace Practice.Controllers.UnauthorizedControllers
             
         }
 
+        private void SetAuthCookie(string jwt)
+        {
+            Response.Cookies.Append("auth", jwt, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTimeOffset.UtcNow.AddHours(12),
+                Path = "/"
+            });
+        }
+
+
+
+
         [HttpPost("login")]
         [Swashbuckle.AspNetCore.Annotations.SwaggerOperation(
             Summary = "Авторизация пользователя",
@@ -44,6 +59,7 @@ namespace Practice.Controllers.UnauthorizedControllers
 
             var roles = await _userManager.GetRolesAsync(user);
             var token = await _jwtTokenService.GenerateTokenAsync(user);
+            SetAuthCookie(token);
 
             var response = new ResponseLoginDTO
             {
@@ -51,7 +67,7 @@ namespace Practice.Controllers.UnauthorizedControllers
                 Username = user.UserName,
                 Phone = user.PhoneNumber,
                 Role = roles,
-                Token = token
+                
             };
 
             return Ok(response);
