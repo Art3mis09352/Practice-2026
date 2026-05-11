@@ -6,7 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using Practice.Models.Entities;
 using User = Practice.Models.Entities.User;
 
-namespace Practice.Services
+namespace Practice.Services.Auth
 {
     public class JwtTokenService
     {

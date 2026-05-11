@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -6,6 +8,7 @@ using Practice.Data;
 using Practice.Data.DTO.Auth;
 using Practice.Models.Entities;
 using Practice.Services;
+using Practice.Services.Auth;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Practice.Controllers.UnauthorizedControllers
@@ -37,6 +40,22 @@ namespace Practice.Controllers.UnauthorizedControllers
             });
         }
 
+        [HttpGet("antiforgery")]
+        [AllowAnonymous]
+        public IActionResult Antiforgery([FromServices] IAntiforgery antiforgery)
+        {
+            var tokens = antiforgery.GetAndStoreTokens(HttpContext);
+
+            Response.Cookies.Append("XSRF-TOKEN", tokens.RequestToken!, new CookieOptions
+            {
+                HttpOnly = false,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Path = "/"
+            });
+
+            return NoContent();
+        }
 
 
         [HttpPost("register")]
@@ -162,7 +181,7 @@ namespace Practice.Controllers.UnauthorizedControllers
                 
             });
         }
-        [HttpPost]
+        [HttpPost("logout")]
         [SwaggerOperation(
             Summary = "logout",
             Description = "Выход пользователя из системы."
@@ -177,6 +196,40 @@ namespace Practice.Controllers.UnauthorizedControllers
             });
 
             return NoContent();
+        }
+
+
+        [HttpPost("login")]
+        [Swashbuckle.AspNetCore.Annotations.SwaggerOperation(
+            Summary = "Авторизация пользователя",
+            Description = "Авторизация пользователя и возвращает данные для ответа API."
+        )]
+        [ProducesResponseType(typeof(ResponseLoginDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult<ResponseLoginDTO>> Login([FromBody] LoginDTO dto)
+        {
+            var user = await _userManager.FindByEmailAsync(dto.Email);
+
+            if (user == null || !await _userManager.CheckPasswordAsync(user, dto.Password))
+            {
+                return Unauthorized("Неверный email или пароль.");
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var token = await _jwtTokenService.GenerateTokenAsync(user);
+            SetAuthCookie(token);
+
+            var response = new ResponseLoginDTO
+            {
+                Email = user.Email,
+                Username = user.UserName,
+                Phone = user.PhoneNumber,
+                Role = roles,
+
+            };
+
+            return Ok(response);
         }
     }
 }

@@ -24,7 +24,7 @@ namespace Practice.Controllers.UserControllers
         }
 
 
-        [HttpGet("GetUserInfo")]
+        [HttpGet("me")]
         [SwaggerOperation(
             Summary = "Получение информации о пользователе",
             Description = "Возвращает информацию о пользователе на основе его идентификатора."
@@ -59,17 +59,19 @@ namespace Practice.Controllers.UserControllers
 
 
 
-        [HttpPut("PutUserInfo")]
+        [HttpPut("me")]
         [SwaggerOperation(
-            Summary = "меняем номер телефона",
-            Description = "меняем номер телефона."
+            Summary = "Обновление профиля пользователя",
+            Description = "Обновляет username и телефон пользователя."
         )]
-        [ProducesResponseType(typeof(UpdateUserProfileDTO), StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult> UpdateUserInfo([FromBody] UpdateUserProfileDTO dto)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); 
-            if (string.IsNullOrEmpty(userId)) {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
                 return Unauthorized();
             }
 
@@ -79,16 +81,32 @@ namespace Practice.Controllers.UserControllers
                 return NotFound("Пользователь не найден.");
             }
 
-            user.UserName = string.IsNullOrWhiteSpace(dto.Username) ? user.UserName : dto.Username;
-            user.PhoneNumber = string.IsNullOrWhiteSpace(dto.Phone) ? user.PhoneNumber : dto.Phone;
+            if (dto.Username != null)
+            {
+                if (string.IsNullOrWhiteSpace(dto.Username))
+                {
+                    return BadRequest("Username не может быть пустым.");
+                }
+
+                user.UserName = dto.Username.Trim();
+            }
+
+            if (dto.Phone != null)
+            {
+                user.PhoneNumber = string.IsNullOrWhiteSpace(dto.Phone)
+                    ? null
+                    : dto.Phone.Trim();
+            }
 
             var result = await _userManager.UpdateAsync(user);
-            
+
             if (!result.Succeeded)
             {
-                return BadRequest("Не удалось обновить информацию о пользователе.");
+                return BadRequest(result.Errors.Select(x => x.Description));
             }
+
             return NoContent();
         }
+
     }
 }
