@@ -11,6 +11,9 @@ namespace Application.Data.DTO.Route.Read
         public bool IsPublic { get; set; }
         public decimal? Budget { get; set; }
         public string? ShareToken { get; set; }
+        public int LikesCount { get; set; }
+        public bool IsLikedByCurrentUser { get; set; }
+
         public IReadOnlyCollection<RouteDayInfoDTO> Days { get; set; } = Array.Empty<RouteDayInfoDTO>();
     }
 }

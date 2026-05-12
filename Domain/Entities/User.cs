@@ -11,8 +11,9 @@ namespace Domain.Entities
         public ICollection<Route> Routes { get; set; } = new List<Route>();
         public ICollection<Block> Blocks { get; set; } = new List<Block>();
 
+        public ICollection<RouteLike> RouteLikes { get; set; } = new List<RouteLike>();
 
-        
+
     }
 
 }

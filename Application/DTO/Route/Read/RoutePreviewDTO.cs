@@ -12,5 +12,8 @@ namespace Application.Data.DTO.Route.Read
         public int PointsCount { get; set; }
         public decimal? Budget { get; set; }
         public string? FirstCity { get; set; }
+        public int LikesCount { get; set; }
+        public bool IsLikedByCurrentUser { get; set; }
+
     }
 }

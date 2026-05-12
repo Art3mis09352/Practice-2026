@@ -8,15 +8,16 @@ namespace Infrastructure.Services.Infrastructure
     public static class AntiforgeryServiceExtensions
     {
         public const string AntiforgeryHeaderName = "X-XSRF-TOKEN";
-        public const string AntiforgeryCookieName = "XSRF-TOKEN";
+        public const string AntiforgeryRequestTokenCookieName = "XSRF-TOKEN";
+        public const string AntiforgerySystemCookieName = "Antiforgery";
 
         public static IServiceCollection AddAppAntiforgery(this IServiceCollection services)
         {
             services.AddAntiforgery(options =>
             {
-                options.HeaderName = "X-XSRF-TOKEN";
-                options.Cookie.Name = "Antiforgery";
-                options.Cookie.HttpOnly = false;
+                options.HeaderName = AntiforgeryHeaderName;
+                options.Cookie.Name = AntiforgerySystemCookieName;
+                options.Cookie.HttpOnly = true;
                 options.Cookie.SameSite = SameSiteMode.None;
                 options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
             });

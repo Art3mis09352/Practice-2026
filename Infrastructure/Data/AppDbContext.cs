@@ -24,7 +24,9 @@ namespace Infrastructure.Data
         public DbSet<BlockStat> BlockStats => Set<BlockStat>();
         public DbSet<RouteDay> RouteDays => Set<RouteDay>();
         public DbSet<RouteDayBlock> RouteDayBlocks => Set<RouteDayBlock>();
-        
+        public DbSet<RouteLike> RouteLikes => Set<RouteLike>();
+
+
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -35,7 +37,8 @@ namespace Infrastructure.Data
             modelBuilder.ApplyConfiguration(new RouteDayConfiguration());
             modelBuilder.ApplyConfiguration(new BlockConfiguration());
             modelBuilder.ApplyConfiguration(new RouteDayBlockConfiguration());
-            
+            modelBuilder.ApplyConfiguration(new RouteLikeConfiguration());
+
 
             modelBuilder.Entity<User>(entity =>
             {

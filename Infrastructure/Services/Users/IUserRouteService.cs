@@ -22,6 +22,10 @@ namespace Infrastructure.Services.Users
         Task<RouteResponseDTO?> AddBlockAsync(string userId, int routeId, int dayId, AddRouteDayBlockDTO dto);
         Task<RouteResponseDTO?> UpdateBlockAsync(string userId, int routeId, int dayId, int routeDayBlockId, UpdateRouteDayBlockDTO dto);
         Task<bool> DeleteBlockAsync(string userId, int routeId, int dayId, int routeDayBlockId);
+        Task<bool> LikeRouteAsync(string userId, int routeId);
+        Task<bool> UnlikeRouteAsync(string userId, int routeId);
+        Task<PagedRoutesResponseDTO> GetLikedRoutesAsync(string userId, GetRoutesQueryDTO dto);
+
     }
 
 }

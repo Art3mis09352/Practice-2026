@@ -1,13 +1,14 @@
-﻿using Application.DTO.User;
+﻿using Application.Data.DTO.Route.Read;
+using Application.DTO.Auth;
+using Application.DTO.User;
+using Domain.Entities;
+using Infrastructure.Services.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Application.DTO.Auth;
-
 using Swashbuckle.AspNetCore.Annotations;
 using System.Security.Claims;
-using Domain.Entities;
 
 namespace Practice.Controllers.UserControllers
 {
@@ -17,10 +18,12 @@ namespace Practice.Controllers.UserControllers
     public class UserController : ControllerBase
     {
         private readonly UserManager<User> _userManager;
+        private readonly IUserRouteService _userRouteService;
 
-        public UserController(UserManager<User> userManager)
+        public UserController(UserManager<User> userManager, IUserRouteService userRouteService)
         {
             _userManager = userManager;
+            _userRouteService = userRouteService;
         }
 
 
@@ -107,6 +110,7 @@ namespace Practice.Controllers.UserControllers
 
             return NoContent();
         }
+        
 
     }
 }

@@ -20,9 +20,13 @@ namespace Domain.Entities
         public bool IsPublic { get; set; } = false;
 
         public string? ShareToken { get; set; }
+        public int LikesCount { get; set; }
+
 
         // Navigation Properties
         public User? User { get; set; }
         public ICollection<RouteDay> Days { get; set; } = new List<RouteDay>();
+        public ICollection<RouteLike> Likes { get; set; } = new List<RouteLike>();
+
     }
 }

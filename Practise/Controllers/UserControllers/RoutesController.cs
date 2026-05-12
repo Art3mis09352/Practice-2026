@@ -303,5 +303,75 @@ namespace Practice.Controllers.UserControllers
         {
             return User.FindFirstValue(ClaimTypes.NameIdentifier);
         }
+
+
+        [HttpPost("{routeId:int}/like")]
+        [SwaggerOperation(
+            Summary = "Лайк маршрута",
+            Description = "Позволяет текущему авторизованному пользователю поставить лайк маршруту."
+        )]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> LikeRoute(int routeId)
+        {
+            var userId = GetUserId();
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            var liked = await _userRouteService.LikeRouteAsync(userId, routeId);
+            if (!liked)
+            {
+                return NotFound("Маршрут не найден.");
+            }
+
+            return NoContent();
+        }
+
+        [HttpDelete("{routeId:int}/like")]
+        [SwaggerOperation(
+                Summary = "Убрать лайк маршрута",
+                Description = "Позволяет текущему авторизованному пользователю убрать лайк с маршрута."
+        )]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UnlikeRoute(int routeId)
+        {
+            var userId = GetUserId();
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            var unliked = await _userRouteService.UnlikeRouteAsync(userId, routeId);
+            if (!unliked)
+            {
+                return NotFound("Лайк маршрута не найден.");
+            }
+
+            return NoContent();
+        }
+
+        [HttpGet("liked")]
+        [SwaggerOperation(
+            Summary = "Получить лайкнутые маршруты",
+            Description = "Возвращает список маршрутов, которые текущий авторизованный пользователь лайкнул."
+        )]
+        [ProducesResponseType(typeof(PagedRoutesResponseDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult<PagedRoutesResponseDTO>> GetLikedRoutes([FromQuery] GetRoutesQueryDTO dto)
+        {
+            var userId = GetUserId();
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            var result = await _userRouteService.GetLikedRoutesAsync(userId, dto);
+            return Ok(result);
+        }
     }
 }

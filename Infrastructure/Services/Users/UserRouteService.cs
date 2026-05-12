@@ -47,6 +47,7 @@ namespace Infrastructure.Services.Users
                 EndDate = dto.EndDate.Date,
                 IsPublic = dto.IsPublic,
                 ShareToken = dto.IsPublic ? Guid.NewGuid().ToString("N") : null,
+                LikesCount = 0,
                 Days = dto.Days
                     .OrderBy(x => x.DayNumber)
                     .Select(dayDto => new RouteDay
@@ -73,7 +74,7 @@ namespace Infrastructure.Services.Users
             var createdRoute = await GetUserRouteWithDetailsAsync(userId, route.Id)
                 ?? throw new InvalidOperationException("Не удалось загрузить созданный маршрут.");
 
-            return MapRouteResponse(createdRoute);
+            return MapRouteResponse(createdRoute, userId);
         }
 
         public async Task<PagedRoutesResponseDTO> GetMyRoutesAsync(string userId, GetRoutesQueryDTO dto)
@@ -83,6 +84,7 @@ namespace Infrastructure.Services.Users
             if (pageSize > 50) pageSize = 50;
 
             var query = _dbContext.Routes
+                .Include(x => x.Likes)
                 .AsNoTracking()
                 .Where(x => x.UserId == userId)
                 .Include(x => x.Days)
@@ -129,7 +131,9 @@ namespace Infrastructure.Services.Users
                         .SelectMany(d => d.RouteDayBlocks)
                         .Where(rdb => rdb.Block != null)
                         .Select(rdb => rdb.Block!.City)
-                        .FirstOrDefault()
+                        .FirstOrDefault(),
+                    LikesCount = route.LikesCount,
+                    IsLikedByCurrentUser = route.Likes.Any(l => l.UserId == userId)
                 })
                 .ToListAsync();
 
@@ -145,7 +149,7 @@ namespace Infrastructure.Services.Users
         public async Task<RouteResponseDTO?> GetMyRouteAsync(string userId, int routeId)
         {
             var route = await GetUserRouteWithDetailsAsync(userId, routeId);
-            return route == null ? null : MapRouteResponse(route);
+            return route == null ? null : MapRouteResponse(route, userId);
         }
 
         public async Task<RouteResponseDTO?> UpdateRouteMetaAsync(string userId, int routeId, UpdateRouteMetaDTO dto)
@@ -445,6 +449,7 @@ namespace Infrastructure.Services.Users
         private async Task<Route?> GetUserRouteWithDetailsAsync(string userId, int routeId)
         {
             return await _dbContext.Routes
+                .Include(x => x.Likes)
                 .AsNoTracking()
                 .Where(x => x.Id == routeId && x.UserId == userId)
                 .Include(x => x.Days.OrderBy(d => d.DayNumber))
@@ -453,7 +458,7 @@ namespace Infrastructure.Services.Users
                 .FirstOrDefaultAsync();
         }
 
-        private static RouteResponseDTO MapRouteResponse(Route route)
+        private static RouteResponseDTO MapRouteResponse(Route route, string userId)
         {
             return new RouteResponseDTO
             {
@@ -465,6 +470,8 @@ namespace Infrastructure.Services.Users
                 IsPublic = route.IsPublic,
                 Budget = route.Budget,
                 ShareToken = route.ShareToken,
+                LikesCount = route.LikesCount,
+                IsLikedByCurrentUser = route.Likes.Any(like => like.UserId == userId),
                 Days = route.Days
                     .OrderBy(d => d.DayNumber)
                     .Select(day => new RouteDayInfoDTO
@@ -492,7 +499,8 @@ namespace Infrastructure.Services.Users
                             })
                             .ToList()
                     })
-                    .ToList()
+                    .ToList(),
+                
             };
         }
 
@@ -600,5 +608,132 @@ namespace Infrastructure.Services.Users
 
             targetBlock.OrderInDay = newOrder;
         }
+
+        public async Task<bool> LikeRouteAsync(string userId, int routeId)
+        {
+            var route = await _dbContext.Routes
+                .FirstOrDefaultAsync(x => x.Id == routeId);
+
+            if (route == null)
+            {
+                return false;
+            }
+
+            var exists = await _dbContext.RouteLikes
+                .AnyAsync(x => x.RouteId == routeId && x.UserId == userId);
+
+            if (exists)
+            {
+                return true;
+            }
+
+            _dbContext.RouteLikes.Add(new RouteLike
+            {
+                RouteId = routeId,
+                UserId = userId
+            });
+            route.LikesCount++;
+            await _dbContext.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> UnlikeRouteAsync(string userId, int routeId)
+        {
+            var like = await _dbContext.RouteLikes
+                .FirstOrDefaultAsync(x => x.RouteId == routeId && x.UserId == userId);
+
+            if (like == null)
+            {
+                return false;
+            }
+
+            var route = await _dbContext.Routes.FirstOrDefaultAsync(x => x.Id == routeId);
+            if (route == null)
+            {
+                return false;
+            }
+
+            _dbContext.RouteLikes.Remove(like);
+
+            if (route.LikesCount > 0)
+            {
+                route.LikesCount--;
+            }
+
+            await _dbContext.SaveChangesAsync();
+            return true;
+        }
+
+
+        public async Task<PagedRoutesResponseDTO> GetLikedRoutesAsync(string userId, GetRoutesQueryDTO dto)
+        {
+            var page = dto.Page < 1 ? 1 : dto.Page;
+            var pageSize = dto.PageSize < 1 ? 10 : dto.PageSize;
+            if (pageSize > 50) pageSize = 50;
+
+            var query = _dbContext.RouteLikes
+                .AsNoTracking()
+                .Where(x => x.UserId == userId)
+                .Select(x => x.Route!)
+                .Include(x => x.Days)
+                    .ThenInclude(x => x.RouteDayBlocks)
+                        .ThenInclude(x => x.Block)
+                .Include(x => x.Likes)
+                .AsQueryable();
+
+            if (dto.StartDateFrom.HasValue)
+            {
+                query = query.Where(x => x.StartDate >= dto.StartDateFrom.Value);
+            }
+
+            if (dto.StartDateTo.HasValue)
+            {
+                query = query.Where(x => x.StartDate <= dto.StartDateTo.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.City))
+            {
+                query = query.Where(x =>
+                    x.Days.Any(d =>
+                        d.RouteDayBlocks.Any(rdb =>
+                            rdb.Block != null && rdb.Block.City == dto.City)));
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .OrderBy(x => x.StartDate)
+                .ThenBy(x => x.Title)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(route => new RoutePreviewDTO
+                {
+                    Id = route.Id,
+                    Title = route.Title,
+                    Description = route.Description,
+                    StartDate = route.StartDate,
+                    EndDate = route.EndDate,
+                    DaysCount = route.Days.Count,
+                    PointsCount = route.Days.SelectMany(d => d.RouteDayBlocks).Count(),
+                    Budget = route.Budget,
+                    FirstCity = route.Days
+                        .SelectMany(d => d.RouteDayBlocks)
+                        .Where(rdb => rdb.Block != null)
+                        .Select(rdb => rdb.Block!.City)
+                        .FirstOrDefault(),
+                    LikesCount = route.LikesCount,
+                    IsLikedByCurrentUser = route.Likes.Any(l => l.UserId == userId)
+                })
+                .ToListAsync();
+
+            return new PagedRoutesResponseDTO
+            {
+                Items = items,
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = totalCount
+            };
+        }
+
     }
 }

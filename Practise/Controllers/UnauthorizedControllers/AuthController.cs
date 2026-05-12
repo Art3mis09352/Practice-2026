@@ -2,6 +2,7 @@
 using Application.DTO.Auth;
 using Domain.Entities;
 using Infrastructure.Services.Auth;
+using Infrastructure.Services.Infrastructure;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -46,13 +47,16 @@ namespace Practice.Controllers.UnauthorizedControllers
         {
             var tokens = antiforgery.GetAndStoreTokens(HttpContext);
 
-            Response.Cookies.Append("XSRF-TOKEN", tokens.RequestToken!, new CookieOptions
-            {
-                HttpOnly = false,
-                Secure = true,
-                SameSite = SameSiteMode.None,
-                Path = "/"
-            });
+            Response.Cookies.Append(
+                AntiforgeryServiceExtensions.AntiforgeryRequestTokenCookieName,
+                tokens.RequestToken!,
+                new CookieOptions
+                {
+                    HttpOnly = false,
+                    Secure = true,
+                    SameSite = SameSiteMode.None,
+                    Path = "/"
+                });
 
             return NoContent();
         }

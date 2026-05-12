@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using Practice.Infrastructure;
 using Practice.Swagger;
 using System.Text;
 using IUserRouteService = Infrastructure.Services.Users.IUserRouteService;
@@ -24,8 +25,9 @@ namespace Practice
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+            builder.Services.AddProblemDetails();
+            builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
-            
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
             builder.Services.AddControllers().AddJsonOptions(options =>
@@ -33,8 +35,8 @@ namespace Practice
                 options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
             });
 
-            //builder.Services.AddDbContext<AppDbContext>(options =>
-                //options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+            builder.Services.AddDbContext<AppDbContext>(options =>
+                options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
             
             builder.Services.AddAppIdentity();
@@ -71,7 +73,17 @@ namespace Practice
             builder.Services.AddAppAntiforgery();
 
 
-            builder.WebHost.UseUrls("https://localhost:7191", "http://localhost:5096");
+            var port = Environment.GetEnvironmentVariable("PORT");
+
+            if (!string.IsNullOrWhiteSpace(port))
+            {
+                builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+            }
+            else
+            {
+                builder.WebHost.UseUrls("https://localhost:7191", "http://localhost:5096");
+            }
+
 
 
 
@@ -79,8 +91,9 @@ namespace Practice
 
             var app = builder.Build();
 
-            
-            //await app.InitializeDatabaseAsync();
+            app.UseExceptionHandler();
+
+            await app.InitializeDatabaseAsync();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
@@ -91,7 +104,7 @@ namespace Practice
 
             }
 
-            //app.UseHttpsRedirection();
+            app.UseHttpsRedirection();
 
             app.UseCors("FrontendCorsPolicy");
 
