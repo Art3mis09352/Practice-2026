@@ -33,8 +33,8 @@ namespace Practice
                 options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
             });
 
-            builder.Services.AddDbContext<AppDbContext>(options =>
-                options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+            //builder.Services.AddDbContext<AppDbContext>(options =>
+                //options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
             
             builder.Services.AddAppIdentity();
@@ -80,7 +80,7 @@ namespace Practice
             var app = builder.Build();
 
             
-            await app.InitializeDatabaseAsync();
+            //await app.InitializeDatabaseAsync();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
@@ -91,7 +91,7 @@ namespace Practice
 
             }
 
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
 
             app.UseCors("FrontendCorsPolicy");
 
@@ -99,7 +99,7 @@ namespace Practice
 
             app.UseAuthentication();
 
-            app.UseAppAntiforgery();
+            //app.UseAppAntiforgery();
 
             app.UseAuthorization();
 

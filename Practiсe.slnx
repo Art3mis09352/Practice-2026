@@ -3,4 +3,7 @@
   <Project Path="Domain/Domain.csproj" Id="b60deb58-37d3-4d1c-be5c-195ece4421ea" />
   <Project Path="Infrastructure/Infrastructure.csproj" Id="b54550b0-db3b-4d79-b004-ace514bf4db2" />
   <Project Path="Practise/Practice.csproj" />
+  <Project Path="Tests.Integration/Tests.Integration.csproj" Id="7e1f4472-0dd8-40a7-a808-e565da063caf" />
+  <Project Path="Tests.Unit/Tests.Unit.csproj" Id="75fb5344-d38a-4e09-9107-f795e6a064cf" />
+  <Project Path="Tests/Tests.csproj" Id="df88b020-609b-46c6-80ad-51a026974187" />
 </Solution>
