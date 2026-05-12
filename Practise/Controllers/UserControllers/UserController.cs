@@ -1,13 +1,13 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Application.DTO.User;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Practice.Data;
-using Practice.Data.DTO.Auth;
-using Practice.Data.DTO.User;
-using Practice.Models.Entities;
+using Application.DTO.Auth;
+
 using Swashbuckle.AspNetCore.Annotations;
 using System.Security.Claims;
+using Domain.Entities;
 
 namespace Practice.Controllers.UserControllers
 {

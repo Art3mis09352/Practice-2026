@@ -1,7 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Application.DTO.Block;
+using Infrastructure.Data;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Practice.Data;
-using Practice.Data.DTO.Block;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Practice.Controllers

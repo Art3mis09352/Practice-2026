@@ -1,11 +1,14 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Application.Data.DTO.Route.Read;
+using Application.Data.DTO.Route.Request;
+using Application.DTO.Route.Create;
+using Application.Services;
+using Infrastructure.Services.Users;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Practice.Data.DTO.Route.Create;
-using Practice.Data.DTO.Route.Read;
-using Practice.Data.DTO.Route.Request;
-using Practice.Services.Users;
+
 using Swashbuckle.AspNetCore.Annotations;
 using System.Security.Claims;
+using IUserRouteService = Infrastructure.Services.Users.IUserRouteService;
 
 namespace Practice.Controllers.UserControllers
 {

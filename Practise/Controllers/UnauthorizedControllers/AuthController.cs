@@ -1,14 +1,14 @@
-﻿using Microsoft.AspNetCore.Antiforgery;
+﻿using Application.Data.DTO.Auth;
+using Application.DTO.Auth;
+using Domain.Entities;
+using Infrastructure.Services.Auth;
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Practice.Data;
-using Practice.Data.DTO.Auth;
-using Practice.Models.Entities;
-using Practice.Services;
-using Practice.Services.Auth;
+
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Practice.Controllers.UnauthorizedControllers

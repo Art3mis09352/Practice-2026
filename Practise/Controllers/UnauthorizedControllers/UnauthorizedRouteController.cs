@@ -1,8 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Application.Data.DTO.Route.Read;
+using Infrastructure.Data;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Practice.Data;
-using Practice.Data.DTO.Route.Read;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Practice.Controllers.UnauthorizedControllers

@@ -1,10 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Application.DTO.Block;
+using Domain.Entities;
+using Infrastructure.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Practice.Data;
-using Practice.Data.DTO.Auth;
-using Practice.Data.DTO.Block;
-using Practice.Models.Entities;
 using Swashbuckle.AspNetCore.Annotations;
 using System.Security.Claims;
 
