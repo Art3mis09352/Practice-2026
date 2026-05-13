@@ -41,7 +41,8 @@ namespace Practice
             
             builder.Services.AddAppIdentity();
             builder.Services.AddJwtAuthentication(builder.Configuration);
-            builder.Services.AddFrontendCors();
+            builder.Services.AddFrontendCors(builder.Configuration);
+
 
             builder.Services.AddScoped<JwtTokenService>();
             builder.Services.AddScoped<AuthCookieService>();
