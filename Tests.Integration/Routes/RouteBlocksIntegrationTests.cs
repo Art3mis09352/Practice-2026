@@ -1,4 +1,4 @@
-ï»¿using Application.Data.DTO.Route.Read;
+using Application.Data.DTO.Route.Read;
 using Infrastructure.Data;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
@@ -34,8 +34,8 @@ public class RouteBlocksIntegrationTests : IClassFixture<CustomWebApplicationFac
         {
             title = "Route for block add",
             description = "One day",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-22T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-22",
             budget = 1000,
             isPublic = false,
             days = new[]
@@ -89,8 +89,8 @@ public class RouteBlocksIntegrationTests : IClassFixture<CustomWebApplicationFac
         {
             title = "Route for bad block",
             description = "One day",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-22T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-22",
             budget = 1000,
             isPublic = false,
             days = new[]
@@ -119,7 +119,7 @@ public class RouteBlocksIntegrationTests : IClassFixture<CustomWebApplicationFac
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
         var body = await response.Content.ReadAsStringAsync();
-        Assert.Contains("Ð½Ðµ Ð½Ð°Ð¹Ð´ÐµÐ½Ñ‹ Ð¸Ð»Ð¸ Ð½Ðµ Ð¿Ð¾Ð´Ñ‚Ð²ÐµÑ€Ð¶Ð´ÐµÐ½Ñ‹", body);
+        Assert.Contains("íå íàéäåíû èëè íå ïîäòâåðæäåíû", body);
     }
 
     [Fact]
@@ -141,8 +141,8 @@ public class RouteBlocksIntegrationTests : IClassFixture<CustomWebApplicationFac
         {
             title = "Route for reorder",
             description = "One day",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-22T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-22",
             budget = 1000,
             isPublic = false,
             days = new[]
@@ -213,8 +213,8 @@ public class RouteBlocksIntegrationTests : IClassFixture<CustomWebApplicationFac
         {
             title = "Route for delete block",
             description = "One day",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-22T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-22",
             budget = 1000,
             isPublic = false,
             days = new[]
@@ -283,8 +283,8 @@ public class RouteBlocksIntegrationTests : IClassFixture<CustomWebApplicationFac
         {
             title = "Owner route",
             description = "Private route",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-22T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-22",
             budget = 1000,
             isPublic = false,
             days = new[]

@@ -52,7 +52,7 @@ namespace Infrastructure.Data.configurations
             builder.HasOne(x => x.Owner)
                 .WithMany(x => x.Blocks)
                 .HasForeignKey(x => x.OwnerId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasMany(x => x.BlockStats)
                 .WithOne(x => x.Block)

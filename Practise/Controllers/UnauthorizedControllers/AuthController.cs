@@ -20,13 +20,11 @@ namespace Practice.Controllers.UnauthorizedControllers
     {
         private readonly UserManager<User> _userManager;
         private readonly JwtTokenService _jwtTokenService;
-        private readonly IConfiguration _configuration;
 
-        public AuthController(UserManager<User> userManager, JwtTokenService jwtTokenService, IConfiguration configuration)
+        public AuthController(UserManager<User> userManager, JwtTokenService jwtTokenService)
         {
             _userManager = userManager;
             _jwtTokenService = jwtTokenService;
-            _configuration = configuration;
         }
 
         private void SetAuthCookie(string jwt)
@@ -99,7 +97,7 @@ namespace Practice.Controllers.UnauthorizedControllers
                 return BadRequest(result.Errors.Select(e => e.Description));
             }
 
-            var addRoleResult = await _userManager.AddToRoleAsync(user, "User");
+            var addRoleResult = await _userManager.AddToRoleAsync(user, role);
             if (!addRoleResult.Succeeded)
             {
                 return BadRequest(addRoleResult.Errors.Select(x => x.Description));
@@ -129,16 +127,8 @@ namespace Practice.Controllers.UnauthorizedControllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<ActionResult<ResponseRegisterDTO>> RegisterOwner(
-            [FromBody] RegisterOwnerDTO dto,
-            [FromQuery] string inviteToken)
+            [FromBody] RegisterOwnerDTO dto)
         {
-            var ownerInviteToken = _configuration["OwnerRegistration:InviteToken"];
-
-            if (string.IsNullOrWhiteSpace(inviteToken) || inviteToken != ownerInviteToken)
-            {
-                return Forbid();
-            }
-
             return await RegisterInternalAsync(dto, "Owner");
         }
 
@@ -167,7 +157,7 @@ namespace Practice.Controllers.UnauthorizedControllers
                 return BadRequest(result.Errors.Select(e => e.Description));
             }
 
-            var addRoleResult = await _userManager.AddToRoleAsync(user, "Owner");
+            var addRoleResult = await _userManager.AddToRoleAsync(user, role);
             if (!addRoleResult.Succeeded)
             {
                 return BadRequest(addRoleResult.Errors.Select(x => x.Description));

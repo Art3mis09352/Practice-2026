@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using Tests.Integration.Helpers;
 
@@ -31,8 +31,8 @@ public class RoutesAuthorizationTests : IClassFixture<CustomWebApplicationFactor
         var payload = new
         {
             title = "Unauthorized route",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-21T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-21",
             days = new[]
             {
                 new

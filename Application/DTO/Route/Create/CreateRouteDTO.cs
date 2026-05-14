@@ -14,11 +14,14 @@ namespace Application.DTO.Route.Create
         [MaxLength(2000)]
         public string? Description { get; set; }
 
-        [Required]
-        public DateTime StartDate { get; set; }
+        [MaxLength(32)]
+        public string? CoverEmoji { get; set; }
 
         [Required]
-        public DateTime EndDate { get; set; }
+        public DateOnly StartDate { get; set; }
+
+        [Required]
+        public DateOnly EndDate { get; set; }
         [Range(0, double.MaxValue, ErrorMessage = "Бюджет не может быть отрицательным.")]
         public decimal? Budget { get; set; }
 

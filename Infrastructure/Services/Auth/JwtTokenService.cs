@@ -27,7 +27,8 @@ namespace Infrastructure.Services.Auth
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.UserName ?? string.Empty)
+                new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
+                new Claim("security_stamp", user.SecurityStamp ?? string.Empty)
 
             };
             claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));

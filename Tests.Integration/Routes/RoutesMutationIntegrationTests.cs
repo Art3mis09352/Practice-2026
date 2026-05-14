@@ -1,4 +1,4 @@
-﻿using Application.Data.DTO.Route.Read;
+using Application.Data.DTO.Route.Read;
 using System.Net;
 using System.Net.Http.Json;
 using Tests.Integration.Helpers;
@@ -26,8 +26,8 @@ public class RoutesMutationIntegrationTests : IClassFixture<CustomWebApplication
         {
             title = "Old title",
             description = "Old description",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-21T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-21",
             budget = 1000,
             isPublic = false,
             days = new[]
@@ -114,8 +114,8 @@ public class RoutesMutationIntegrationTests : IClassFixture<CustomWebApplication
         {
             title = "Owner route",
             description = "Private route",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-22T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-22",
             budget = 1000,
             isPublic = false,
             days = new[]

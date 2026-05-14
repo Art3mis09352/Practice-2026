@@ -1,4 +1,5 @@
-﻿using Domain.Entities;
+using Application.DTO.Admin;
+using Application.DTO.Block;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
@@ -86,7 +87,7 @@ public class AdminCrudIntegrationTests : IClassFixture<CustomWebApplicationFacto
             var dbUser = await userManager.FindByEmailAsync(victim.Email)
                 ?? throw new InvalidOperationException("Victim not found.");
 
-            var response = await adminClient.DeleteAsync($"/api/admin/DeleteUser?id={dbUser.Id}");
+            var response = await adminClient.DeleteAsync($"/api/admin/users/{dbUser.Id}");
             Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         }
     }
@@ -96,9 +97,94 @@ public class AdminCrudIntegrationTests : IClassFixture<CustomWebApplicationFacto
     {
         var (client, _, _) = await CreateAdminAsync();
 
-        var response = await client.DeleteAsync("/api/admin/DeleteUser?id=missing-user-id");
+        var response = await client.DeleteAsync("/api/admin/users/missing-user-id");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Admin_Can_Delete_Block()
+    {
+        int blockId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var block = await BlockSeedHelper.AddUnapprovedBlockAsync(db, 302);
+            blockId = block.Id;
+        }
+
+        var (client, _, _) = await CreateAdminAsync();
+
+        var response = await client.DeleteAsync($"/api/admin/blocks/{blockId}");
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var block = await db.Blocks.FindAsync(blockId);
+
+            Assert.Null(block);
+        }
+    }
+
+    [Fact]
+    public async Task Admin_Can_Get_Pending_Blocks_With_Search_And_Pagination()
+    {
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await BlockSeedHelper.AddUnapprovedBlockAsync(db, 303);
+            await BlockSeedHelper.AddUnapprovedBlockAsync(db, 304);
+            await BlockSeedHelper.AddApprovedBlockAsync(db, 305);
+
+            var target = await db.Blocks.FindAsync(304);
+            if (target != null)
+            {
+                target.Title = "Hidden admin pending block";
+                target.Address = "Secret street";
+                await db.SaveChangesAsync();
+            }
+        }
+
+        var (client, _, _) = await CreateAdminAsync();
+
+        var response = await client.GetAsync("/api/admin/blocks/pending?search=secret&page=1&pageSize=1");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var body = await ApiTestHelper.ReadAsAsync<PagedBlocksResponseDTO>(response);
+
+        Assert.Equal(1, body.Page);
+        Assert.Equal(1, body.PageSize);
+        Assert.Equal(1, body.TotalCount);
+        Assert.Single(body.Items);
+        Assert.Equal("Hidden admin pending block", body.Items.Single().Title);
+        Assert.False(body.Items.Single().IsApproved);
+    }
+
+    [Fact]
+    public async Task Admin_Can_Get_Users_With_Search_And_Pagination()
+    {
+        var (client, _, _) = await CreateAdminAsync();
+
+        var uniqueSuffix = Guid.NewGuid().ToString("N")[..8];
+        var targetEmail = $"target_{uniqueSuffix}@example.com";
+
+        await ApiTestHelper.RegisterUserAsync(ApiTestHelper.CreateClient(_factory), email: targetEmail);
+        await ApiTestHelper.RegisterUserAsync(ApiTestHelper.CreateClient(_factory), email: $"other_{uniqueSuffix}@example.com");
+
+        var response = await client.GetAsync($"/api/admin/users?search=target_{uniqueSuffix}&page=1&pageSize=1");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var body = await ApiTestHelper.ReadAsAsync<PagedAdminUsersResponseDTO>(response);
+
+        Assert.Equal(1, body.Page);
+        Assert.Equal(1, body.PageSize);
+        Assert.Equal(1, body.TotalCount);
+        Assert.Single(body.Items);
+        Assert.Equal(targetEmail, body.Items.Single().Email);
     }
 
     [Fact]
@@ -109,7 +195,7 @@ public class AdminCrudIntegrationTests : IClassFixture<CustomWebApplicationFacto
         var ownerEmail = $"owner_{Guid.NewGuid():N}@example.com";
         var ownerPassword = "Password123!";
 
-        await client.PostAsJsonAsync("/api/auth/register-owner?inviteToken=owner-test-token", new
+        await client.PostAsJsonAsync("/api/auth/register-owner", new
         {
             email = ownerEmail,
             password = ownerPassword,

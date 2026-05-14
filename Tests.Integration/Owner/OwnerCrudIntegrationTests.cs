@@ -47,7 +47,7 @@ public class OwnerCrudIntegrationTests : IClassFixture<CustomWebApplicationFacto
         };
 
         var registerResponse = await client.PostAsJsonAsync(
-            "/api/auth/register-owner?inviteToken=owner-test-token",
+            "/api/auth/register-owner",
             registerPayload);
 
         Assert.Equal(HttpStatusCode.Created, registerResponse.StatusCode);
@@ -72,7 +72,7 @@ public class OwnerCrudIntegrationTests : IClassFixture<CustomWebApplicationFacto
         var ownerEmail = $"owner_{Guid.NewGuid():N}@example.com";
         var ownerPassword = "Password123!";
 
-        await client.PostAsJsonAsync("/api/auth/register-owner?inviteToken=owner-test-token", new
+        await client.PostAsJsonAsync("/api/auth/register-owner", new
         {
             email = ownerEmail,
             password = ownerPassword,
@@ -111,7 +111,7 @@ public class OwnerCrudIntegrationTests : IClassFixture<CustomWebApplicationFacto
         var ownerEmail = $"owner_{Guid.NewGuid():N}@example.com";
         var ownerPassword = "Password123!";
 
-        await client.PostAsJsonAsync("/api/auth/register-owner?inviteToken=owner-test-token", new
+        await client.PostAsJsonAsync("/api/auth/register-owner", new
         {
             email = ownerEmail,
             password = ownerPassword,
@@ -144,7 +144,7 @@ public class OwnerCrudIntegrationTests : IClassFixture<CustomWebApplicationFacto
         var ownerBEmail = $"ownerB_{Guid.NewGuid():N}@example.com";
         const string password = "Password123!";
 
-        await ownerClientA.PostAsJsonAsync("/api/auth/register-owner?inviteToken=owner-test-token", new
+        await ownerClientA.PostAsJsonAsync("/api/auth/register-owner", new
         {
             email = ownerAEmail,
             password,
@@ -152,7 +152,7 @@ public class OwnerCrudIntegrationTests : IClassFixture<CustomWebApplicationFacto
             username = $"ownera_{Guid.NewGuid():N}"[..12]
         });
 
-        await ownerClientB.PostAsJsonAsync("/api/auth/register-owner?inviteToken=owner-test-token", new
+        await ownerClientB.PostAsJsonAsync("/api/auth/register-owner", new
         {
             email = ownerBEmail,
             password,
@@ -190,7 +190,7 @@ public class OwnerCrudIntegrationTests : IClassFixture<CustomWebApplicationFacto
         var ownerEmail = $"owner_{Guid.NewGuid():N}@example.com";
         var ownerPassword = "Password123!";
 
-        await client.PostAsJsonAsync("/api/auth/register-owner?inviteToken=owner-test-token", new
+        await client.PostAsJsonAsync("/api/auth/register-owner", new
         {
             email = ownerEmail,
             password = ownerPassword,
@@ -214,7 +214,7 @@ public class OwnerCrudIntegrationTests : IClassFixture<CustomWebApplicationFacto
         var ownerEmail = $"owner_{Guid.NewGuid():N}@example.com";
         const string ownerPassword = "Password123!";
 
-        await ownerClient.PostAsJsonAsync("/api/auth/register-owner?inviteToken=owner-test-token", new
+        await ownerClient.PostAsJsonAsync("/api/auth/register-owner", new
         {
             email = ownerEmail,
             password = ownerPassword,

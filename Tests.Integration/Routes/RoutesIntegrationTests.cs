@@ -1,4 +1,4 @@
-﻿using Application.Data.DTO.Route.Read;
+using Application.Data.DTO.Route.Read;
 using System.Net;
 using System.Net.Http.Json;
 using Tests.Integration.Helpers;
@@ -26,8 +26,8 @@ public class RoutesIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         {
             title = "My first route",
             description = "Created by integration test",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-21T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-21",
             budget = 2500,
             isPublic = false,
             days = new[]
@@ -67,8 +67,8 @@ public class RoutesIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         {
             title = "Route A",
             description = "Owned by A",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-21T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-21",
             budget = 1000,
             isPublic = false,
             days = new[]
@@ -87,8 +87,8 @@ public class RoutesIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         {
             title = "Route B",
             description = "Owned by B",
-            startDate = "2026-05-22T00:00:00Z",
-            endDate = "2026-05-23T00:00:00Z",
+            startDate = "2026-05-22",
+            endDate = "2026-05-23",
             budget = 2000,
             isPublic = false,
             days = new[]
@@ -134,8 +134,8 @@ public class RoutesIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         {
             title = "Owner route",
             description = "Private route",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-21T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-21",
             budget = 1000,
             isPublic = false,
             days = new[]
@@ -167,8 +167,8 @@ public class RoutesIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         {
             title = "Route for day add",
             description = "Route with one day",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-22T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-22",
             budget = 1000,
             isPublic = false,
             days = new[]
@@ -197,5 +197,62 @@ public class RoutesIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         var route = await ApiTestHelper.ReadAsAsync<RouteResponseDTO>(response);
         Assert.Equal(2, route.Days.Count);
         Assert.Contains(route.Days, x => x.DayNumber == 2 && x.Title == "Day 2");
+    }
+
+    [Fact]
+    public async Task GetMyRoutes_Can_Search_By_Title()
+    {
+        var client = ApiTestHelper.CreateClient(_factory);
+
+        var (_, user) = await ApiTestHelper.RegisterUserAsync(client);
+        await ApiTestHelper.AuthenticateAsUserAsync(client, user.Email, user.Password);
+
+        await ApiTestHelper.CreateRouteAsync(client, new
+        {
+            title = "Sea vacation",
+            description = "Summer trip",
+            startDate = "2026-05-20",
+            endDate = "2026-05-21",
+            budget = 1000,
+            isPublic = false,
+            days = new[]
+            {
+                new
+                {
+                    dayNumber = 1,
+                    title = "Day 1",
+                    notes = "Sea",
+                    blocks = Array.Empty<object>()
+                }
+            }
+        });
+
+        await ApiTestHelper.CreateRouteAsync(client, new
+        {
+            title = "Mountain weekend",
+            description = "Hiking",
+            startDate = "2026-05-22",
+            endDate = "2026-05-23",
+            budget = 1000,
+            isPublic = false,
+            days = new[]
+            {
+                new
+                {
+                    dayNumber = 1,
+                    title = "Day 1",
+                    notes = "Mountain",
+                    blocks = Array.Empty<object>()
+                }
+            }
+        });
+
+        var response = await client.GetAsync("/api/routes/my?search=Sea");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var routes = await ApiTestHelper.ReadAsAsync<PagedRoutesResponseDTO>(response);
+        Assert.Single(routes.Items);
+        Assert.Equal("Sea vacation", routes.Items.Single().Title);
     }
 }

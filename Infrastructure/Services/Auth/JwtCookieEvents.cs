@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using System.Security.Claims;
+using User = Domain.Entities.User;
 
 namespace Infrastructure.Services.Auth
 {
@@ -27,11 +30,34 @@ namespace Infrastructure.Services.Auth
             return Task.CompletedTask;
         }
 
-        public static Task OnTokenValidated(TokenValidatedContext context)
+        public static async Task OnTokenValidated(TokenValidatedContext context)
         {
+            var userManager = context.HttpContext.RequestServices.GetService(typeof(UserManager<User>)) as UserManager<User>;
+            var userId = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (userManager == null || string.IsNullOrWhiteSpace(userId))
+            {
+                context.Fail("JWT user validation failed.");
+                return;
+            }
+
+            var user = await userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                context.Fail("Пользователь больше не существует.");
+                return;
+            }
+
+            var tokenSecurityStamp = context.Principal?.FindFirst("security_stamp")?.Value;
+            if (!string.IsNullOrWhiteSpace(tokenSecurityStamp) &&
+                !string.Equals(tokenSecurityStamp, user.SecurityStamp, StringComparison.Ordinal))
+            {
+                context.Fail("JWT security stamp is outdated.");
+                return;
+            }
+
             var name = context.Principal?.Identity?.Name;
             Console.WriteLine($"JWT ok for: {name}");
-            return Task.CompletedTask;
         }
 
         public static Task OnChallenge(JwtBearerChallengeContext context)

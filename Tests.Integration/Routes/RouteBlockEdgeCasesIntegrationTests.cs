@@ -1,4 +1,4 @@
-ï»¿using Application.Data.DTO.Route.Read;
+using Application.Data.DTO.Route.Read;
 using Infrastructure.Data;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
@@ -34,8 +34,8 @@ public class RouteBlockEdgeCasesIntegrationTests : IClassFixture<CustomWebApplic
         {
             title = "Route for invalid order",
             description = "One day",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-22T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-22",
             budget = 1000,
             isPublic = false,
             days = new[]
@@ -87,8 +87,8 @@ public class RouteBlockEdgeCasesIntegrationTests : IClassFixture<CustomWebApplic
         {
             title = "Route for too large order",
             description = "One day",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-22T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-22",
             budget = 1000,
             isPublic = false,
             days = new[]
@@ -125,7 +125,7 @@ public class RouteBlockEdgeCasesIntegrationTests : IClassFixture<CustomWebApplic
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
         var body = await response.Content.ReadAsStringAsync();
-        Assert.Contains("Ð²Ñ‹Ñ…Ð¾Ð´Ð¸Ñ‚ Ð·Ð° Ð´Ð¾Ð¿ÑƒÑÑ‚Ð¸Ð¼Ñ‹Ð¹ Ð´Ð¸Ð°Ð¿Ð°Ð·Ð¾Ð½", body);
+        Assert.Contains("âûõîäèò çà äîïóñòèìûé äèàïàçîí", body);
     }
 
     [Fact]
@@ -147,8 +147,8 @@ public class RouteBlockEdgeCasesIntegrationTests : IClassFixture<CustomWebApplic
         {
             title = "Route for invalid block update",
             description = "One day",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-22T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-22",
             budget = 1000,
             isPublic = false,
             days = new[]
@@ -192,7 +192,7 @@ public class RouteBlockEdgeCasesIntegrationTests : IClassFixture<CustomWebApplic
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
         var body = await response.Content.ReadAsStringAsync();
-        Assert.Contains("Ð²Ñ‹Ñ…Ð¾Ð´Ð¸Ñ‚ Ð·Ð° Ð´Ð¾Ð¿ÑƒÑÑ‚Ð¸Ð¼Ñ‹Ð¹ Ð´Ð¸Ð°Ð¿Ð°Ð·Ð¾Ð½", body);
+        Assert.Contains("âûõîäèò çà äîïóñòèìûé äèàïàçîí", body);
     }
 
     [Fact]
@@ -214,8 +214,8 @@ public class RouteBlockEdgeCasesIntegrationTests : IClassFixture<CustomWebApplic
         {
             title = "Route for block replace",
             description = "One day",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-22T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-22",
             budget = 1000,
             isPublic = false,
             days = new[]
@@ -282,8 +282,8 @@ public class RouteBlockEdgeCasesIntegrationTests : IClassFixture<CustomWebApplic
         {
             title = "Owner route for block delete",
             description = "One day",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-22T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-22",
             budget = 1000,
             isPublic = false,
             days = new[]

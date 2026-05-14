@@ -1,4 +1,4 @@
-﻿using Domain.Entities;
+using Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
@@ -54,7 +54,7 @@ public class AdminIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         var response = await client.PatchAsJsonAsync("/api/admin/blocks/1/approve", new { });
 
         Assert.True(
-            response.StatusCode == HttpStatusCode.OK ||
+            response.StatusCode == HttpStatusCode.NoContent ||
             response.StatusCode == HttpStatusCode.NotFound);
     }
 }

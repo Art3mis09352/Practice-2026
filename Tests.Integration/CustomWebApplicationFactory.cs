@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Tests.Integration;
 
@@ -14,7 +15,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Practice.Progra
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseEnvironment("Development");
+        builder.UseEnvironment("Testing");
 
         builder.ConfigureAppConfiguration((_, config) =>
         {
@@ -22,8 +23,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Practice.Progra
             {
                 ["Jwt:Key"] = "01234567890123456789012345678901",
                 ["Jwt:Issuer"] = "test-issuer",
-                ["Jwt:Audience"] = "test-audience",
-                ["OwnerRegistration:InviteToken"] = "owner-test-token"
+                ["Jwt:Audience"] = "test-audience"
             };
 
             config.AddInMemoryCollection(settings);
@@ -31,20 +31,22 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Practice.Progra
 
         builder.ConfigureServices(services =>
         {
-            var dbContextOptionsDescriptor = services.SingleOrDefault(
-                d => d.ServiceType == typeof(DbContextOptions<AppDbContext>));
+            services.RemoveAll<AppDbContext>();
+            services.RemoveAll<DbContextOptions<AppDbContext>>();
+            services.RemoveAll<DbContextOptions>();
 
-            if (dbContextOptionsDescriptor != null)
+            var optionsConfigurationDescriptors = services
+                .Where(d =>
+                    d.ServiceType.FullName != null &&
+                    d.ServiceType.FullName.StartsWith("Microsoft.EntityFrameworkCore.Infrastructure.IDbContextOptionsConfiguration") &&
+                    d.ServiceType.IsGenericType &&
+                    d.ServiceType.GenericTypeArguments.Length == 1 &&
+                    d.ServiceType.GenericTypeArguments[0] == typeof(AppDbContext))
+                .ToList();
+
+            foreach (var descriptor in optionsConfigurationDescriptors)
             {
-                services.Remove(dbContextOptionsDescriptor);
-            }
-
-            var dbContextDescriptor = services.SingleOrDefault(
-                d => d.ServiceType == typeof(AppDbContext));
-
-            if (dbContextDescriptor != null)
-            {
-                services.Remove(dbContextDescriptor);
+                services.Remove(descriptor);
             }
 
             services.AddDbContext<AppDbContext>(options =>

@@ -1,4 +1,4 @@
-ï»¿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using Tests.Integration.Helpers;
 
@@ -25,8 +25,8 @@ public class RoutesValidationIntegrationTests : IClassFixture<CustomWebApplicati
         {
             title = "Invalid route",
             description = "Bad dates",
-            startDate = "2026-05-25T00:00:00Z",
-            endDate = "2026-05-20T00:00:00Z",
+            startDate = "2026-05-25",
+            endDate = "2026-05-20",
             budget = 1000,
             isPublic = false,
             days = new[]
@@ -46,7 +46,7 @@ public class RoutesValidationIntegrationTests : IClassFixture<CustomWebApplicati
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
         var body = await response.Content.ReadAsStringAsync();
-        Assert.Contains("Ð”Ð°Ñ‚Ð° Ð½Ð°Ñ‡Ð°Ð»Ð° Ð¼Ð°Ñ€ÑˆÑ€ÑƒÑ‚Ð°", body);
+        Assert.Contains("Äàòà íà÷àëà ìàðøðóòà", body);
     }
 
     [Fact]
@@ -61,8 +61,8 @@ public class RoutesValidationIntegrationTests : IClassFixture<CustomWebApplicati
         {
             title = "Valid route",
             description = "Before invalid update",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-22T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-22",
             budget = 1000,
             isPublic = false,
             days = new[]
@@ -79,8 +79,8 @@ public class RoutesValidationIntegrationTests : IClassFixture<CustomWebApplicati
 
         var payload = new
         {
-            startDate = "2026-05-25T00:00:00Z",
-            endDate = "2026-05-20T00:00:00Z"
+            startDate = "2026-05-25",
+            endDate = "2026-05-20"
         };
 
         var response = await client.PatchAsJsonAsync($"/api/routes/{created.Id}", payload);
@@ -88,7 +88,7 @@ public class RoutesValidationIntegrationTests : IClassFixture<CustomWebApplicati
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
         var body = await response.Content.ReadAsStringAsync();
-        Assert.Contains("Ð”Ð°Ñ‚Ð° Ð½Ð°Ñ‡Ð°Ð»Ð° Ð¼Ð°Ñ€ÑˆÑ€ÑƒÑ‚Ð°", body);
+        Assert.Contains("Äàòà íà÷àëà ìàðøðóòà", body);
     }
 
     [Fact]
@@ -103,8 +103,8 @@ public class RoutesValidationIntegrationTests : IClassFixture<CustomWebApplicati
         {
             title = "Route with one day",
             description = "Duplicate day test",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-22T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-22",
             budget = 1000,
             isPublic = false,
             days = new[]
@@ -131,7 +131,7 @@ public class RoutesValidationIntegrationTests : IClassFixture<CustomWebApplicati
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
         var body = await response.Content.ReadAsStringAsync();
-        Assert.Contains("ÑƒÐ¶Ðµ ÑÑƒÑ‰ÐµÑÑ‚Ð²ÑƒÐµÑ‚", body);
+        Assert.Contains("óæå ñóùåñòâóåò", body);
     }
 
     [Fact]
@@ -146,8 +146,8 @@ public class RoutesValidationIntegrationTests : IClassFixture<CustomWebApplicati
         {
             title = "Short route",
             description = "Out of range day test",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-21T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-21",
             budget = 1000,
             isPublic = false,
             days = new[]
@@ -174,6 +174,6 @@ public class RoutesValidationIntegrationTests : IClassFixture<CustomWebApplicati
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
         var body = await response.Content.ReadAsStringAsync();
-        Assert.Contains("ÐÐ¾Ð¼ÐµÑ€ Ð´Ð½Ñ Ð²Ñ‹Ñ…Ð¾Ð´Ð¸Ñ‚ Ð·Ð° Ð´Ð¸Ð°Ð¿Ð°Ð·Ð¾Ð½ Ð¼Ð°Ñ€ÑˆÑ€ÑƒÑ‚Ð°", body);
+        Assert.Contains("Íîìåð äíÿ âûõîäèò çà äèàïàçîí ìàðøðóòà", body);
     }
 }

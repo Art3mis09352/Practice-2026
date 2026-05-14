@@ -1,4 +1,4 @@
-п»їusing Application.Data.DTO.Auth;
+using Application.Data.DTO.Auth;
 using Application.Data.DTO.Route.Read;
 using System.Net;
 using System.Net.Http.Headers;
@@ -16,10 +16,13 @@ public static class ApiTestHelper
 
     public static HttpClient CreateClient(CustomWebApplicationFactory factory)
     {
-        return factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+        var client = factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
         {
             AllowAutoRedirect = false
         });
+
+        client.BaseAddress = new Uri("https://localhost");
+        return client;
     }
 
     public static async Task<(HttpResponseMessage response, RegisterUserDto dto)> RegisterUserAsync(
@@ -64,7 +67,7 @@ public static class ApiTestHelper
         {
             var body = await loginResponse.Content.ReadAsStringAsync();
             throw new InvalidOperationException(
-                $"РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°Р»РѕРіРёРЅРёС‚СЊСЃСЏ. Status={(int)loginResponse.StatusCode}, Body={body}");
+                $"Не удалось залогиниться. Status={(int)loginResponse.StatusCode}, Body={body}");
         }
 
         var token = ExtractAuthCookie(loginResponse);
@@ -79,8 +82,8 @@ public static class ApiTestHelper
         {
             title = "Integration route",
             description = "Created from integration test",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-21T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-21",
             budget = 1000,
             isPublic = false,
             days = new[]
@@ -99,7 +102,7 @@ public static class ApiTestHelper
         response.EnsureSuccessStatusCode();
 
         var route = await response.Content.ReadFromJsonAsync<RouteResponseDTO>(JsonOptions)
-            ?? throw new InvalidOperationException("RouteResponseDTO РЅРµ РґРµСЃРµСЂРёР°Р»РёР·РѕРІР°Р»СЃСЏ.");
+            ?? throw new InvalidOperationException("RouteResponseDTO не десериализовался.");
 
         return route.Id;
     }
@@ -107,20 +110,20 @@ public static class ApiTestHelper
     public static async Task<T> ReadAsAsync<T>(HttpResponseMessage response)
     {
         var result = await response.Content.ReadFromJsonAsync<T>(JsonOptions);
-        return result ?? throw new InvalidOperationException($"РќРµ СѓРґР°Р»РѕСЃСЊ РїСЂРѕС‡РёС‚Р°С‚СЊ {typeof(T).Name} РёР· РѕС‚РІРµС‚Р°.");
+        return result ?? throw new InvalidOperationException($"Не удалось прочитать {typeof(T).Name} из ответа.");
     }
 
     private static string ExtractAuthCookie(HttpResponseMessage response)
     {
         if (!response.Headers.TryGetValues("Set-Cookie", out var setCookieHeaders))
         {
-            throw new InvalidOperationException("Р’ РѕС‚РІРµС‚Рµ РЅРµС‚ Set-Cookie.");
+            throw new InvalidOperationException("В ответе нет Set-Cookie.");
         }
 
         var authCookie = setCookieHeaders.FirstOrDefault(x => x.StartsWith("auth=", StringComparison.OrdinalIgnoreCase));
         if (authCookie == null)
         {
-            throw new InvalidOperationException("Р’ РѕС‚РІРµС‚Рµ РЅРµС‚ auth cookie.");
+            throw new InvalidOperationException("В ответе нет auth cookie.");
         }
 
         var tokenPart = authCookie.Split(';', StringSplitOptions.RemoveEmptyEntries)[0];
@@ -128,7 +131,7 @@ public static class ApiTestHelper
 
         if (string.IsNullOrWhiteSpace(token))
         {
-            throw new InvalidOperationException("JWT token РІ cookie РїСѓСЃС‚РѕР№.");
+            throw new InvalidOperationException("JWT token в cookie пустой.");
         }
 
         return token;
@@ -139,8 +142,8 @@ public static class ApiTestHelper
         {
             title = "Integration route",
             description = "Created from integration test",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-21T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-21",
             budget = 1000,
             isPublic = false,
             days = new[]
@@ -172,7 +175,7 @@ public static class ApiTestHelper
         {
             var body = await registerResponse.Content.ReadAsStringAsync();
             throw new InvalidOperationException(
-                $"Р РµРіРёСЃС‚СЂР°С†РёСЏ РЅРµ СѓРґР°Р»Р°СЃСЊ. Status={(int)registerResponse.StatusCode}, Body={body}");
+                $"Регистрация не удалась. Status={(int)registerResponse.StatusCode}, Body={body}");
         }
 
         await AuthenticateAsUserAsync(client, dto.Email, dto.Password);

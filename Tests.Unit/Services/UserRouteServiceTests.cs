@@ -69,8 +69,8 @@ public class UserRouteServiceTests
         var dto = new CreateRouteDTO
         {
             Title = "Empty days route",
-            StartDate = new DateTime(2026, 5, 20),
-            EndDate = new DateTime(2026, 5, 21),
+            StartDate = DateOnly.FromDateTime(new DateTime(2026, 5, 20)),
+            EndDate = DateOnly.FromDateTime(new DateTime(2026, 5, 21)),
             Days = []
         };
 

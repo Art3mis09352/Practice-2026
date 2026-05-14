@@ -75,6 +75,14 @@ namespace Practice.Controllers.UnauthorizedControllers
                 query = query.Where(b => b.City == queryDto.City);
             }
 
+            if (!string.IsNullOrWhiteSpace(queryDto.Search))
+            {
+                var search = queryDto.Search.Trim().ToLower();
+                query = query.Where(b =>
+                    b.Title.ToLower().Contains(search) ||
+                    (b.Address != null && b.Address.ToLower().Contains(search)));
+            }
+
             if (!string.IsNullOrWhiteSpace(queryDto.Category))
             {
                 query = query.Where(b => b.Category == queryDto.Category);

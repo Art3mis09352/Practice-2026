@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using Application.DTO.Block;
 using Infrastructure.Data;
 using Microsoft.Extensions.DependencyInjection;
@@ -90,5 +90,32 @@ public class UnauthorizedPointsIntegrationTests : IClassFixture<CustomWebApplica
 
         var list = await ApiTestHelper.ReadAsAsync<PagedBlocksResponseDTO>(response);
         Assert.All(list.Items, x => Assert.Equal("Moscow", x.City));
+    }
+
+    [Fact]
+    public async Task Public_Can_Search_Points_By_Title_Or_Address()
+    {
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await BlockSeedHelper.AddApprovedBlockAsync(db, 407, city: "Moscow");
+            await BlockSeedHelper.AddApprovedBlockAsync(db, 408, city: "Moscow");
+        }
+
+        var client = ApiTestHelper.CreateClient(_factory);
+
+        var byTitleResponse = await client.GetAsync("/api/unauthorizedpoint?search=Block 407");
+        Assert.Equal(HttpStatusCode.OK, byTitleResponse.StatusCode);
+
+        var byTitleList = await ApiTestHelper.ReadAsAsync<PagedBlocksResponseDTO>(byTitleResponse);
+        Assert.Contains(byTitleList.Items, x => x.Id == 407);
+        Assert.DoesNotContain(byTitleList.Items, x => x.Id == 408);
+
+        var byAddressResponse = await client.GetAsync("/api/unauthorizedpoint?search=Address 408");
+        Assert.Equal(HttpStatusCode.OK, byAddressResponse.StatusCode);
+
+        var byAddressList = await ApiTestHelper.ReadAsAsync<PagedBlocksResponseDTO>(byAddressResponse);
+        Assert.Contains(byAddressList.Items, x => x.Id == 408);
+        Assert.DoesNotContain(byAddressList.Items, x => x.Id == 407);
     }
 }

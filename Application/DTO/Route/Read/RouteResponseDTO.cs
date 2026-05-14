@@ -6,8 +6,9 @@ namespace Application.Data.DTO.Route.Read
         public int Id { get; set; }
         public string Title { get; set; } = string.Empty;
         public string? Description { get; set; }
-        public DateTime StartDate { get; set; }
-        public DateTime EndDate { get; set; }
+        public string? CoverEmoji { get; set; }
+        public DateOnly StartDate { get; set; }
+        public DateOnly EndDate { get; set; }
         public bool IsPublic { get; set; }
         public decimal? Budget { get; set; }
         public string? ShareToken { get; set; }

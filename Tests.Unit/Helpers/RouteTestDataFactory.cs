@@ -17,8 +17,8 @@ public static class RouteTestDataFactory
         {
             Title = "Test route",
             Description = "Route for tests",
-            StartDate = start,
-            EndDate = end,
+            StartDate = DateOnly.FromDateTime(start),
+            EndDate = DateOnly.FromDateTime(end),
             Budget = 1000,
             IsPublic = false,
             Days =

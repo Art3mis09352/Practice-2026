@@ -22,11 +22,17 @@ namespace Infrastructure.Data.configurations
             builder.Property(x => x.Description)
                 .HasMaxLength(2000);
 
+            builder.Property(x => x.CoverEmoji)
+                .HasMaxLength(32);
+
             builder.Property(x => x.StartDate)
+                .HasColumnType("date")
                 .IsRequired();
 
             builder.Property(x => x.EndDate)
+                .HasColumnType("date")
                 .IsRequired();
+
 
             builder.Property(x => x.IsPublic)
                 .IsRequired();

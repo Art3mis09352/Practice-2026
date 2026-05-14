@@ -11,8 +11,8 @@ public class CreateRouteDtoValidationTests
         var dto = new CreateRouteDTO
         {
             Title = "",
-            StartDate = DateTime.UtcNow.Date,
-            EndDate = DateTime.UtcNow.Date.AddDays(1),
+            StartDate = DateOnly.FromDateTime(DateTime.UtcNow.Date),
+            EndDate = DateOnly.FromDateTime(DateTime.UtcNow.Date.AddDays(1)),
             Days =
             [
                 new CreateRouteDayDTO
@@ -41,8 +41,8 @@ public class CreateRouteDtoValidationTests
         var dto = new CreateRouteDTO
         {
             Title = "Route",
-            StartDate = DateTime.UtcNow.Date,
-            EndDate = DateTime.UtcNow.Date.AddDays(1),
+            StartDate = DateOnly.FromDateTime(DateTime.UtcNow.Date),
+            EndDate = DateOnly.FromDateTime(DateTime.UtcNow.Date.AddDays(1)),
             Days = []
         };
 

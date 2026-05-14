@@ -45,6 +45,7 @@ namespace Practice.Controllers.UnauthorizedControllers
                 Id = route.Id,
                 Title = route.Title,
                 Description = route.Description,
+                CoverEmoji = route.CoverEmoji,
                 StartDate = route.StartDate,
                 EndDate = route.EndDate,
                 IsPublic = route.IsPublic,
@@ -121,6 +122,12 @@ namespace Practice.Controllers.UnauthorizedControllers
                             rdb.Block != null && rdb.Block.City == queryDto.City)));
             }
 
+            if (!string.IsNullOrWhiteSpace(queryDto.Search))
+            {
+                var search = queryDto.Search.Trim().ToLower();
+                query = query.Where(x => x.Title.ToLower().Contains(search));
+            }
+
             var totalCount = await query.CountAsync();
 
             var items = await query
@@ -133,6 +140,7 @@ namespace Practice.Controllers.UnauthorizedControllers
                     Id = route.Id,
                     Title = route.Title,
                     Description = route.Description,
+                    CoverEmoji = route.CoverEmoji,
                     StartDate = route.StartDate,
                     EndDate = route.EndDate,
                     DaysCount = route.Days.Count,
@@ -142,7 +150,11 @@ namespace Practice.Controllers.UnauthorizedControllers
                         .Where(rdb => rdb.Block != null)
                         .Select(rdb => rdb.Block!.City)
                         .FirstOrDefault(),
-                    Budget = route.Budget
+                    Budget = route.Budget,
+                    IsPublic = route.IsPublic,
+                    OwnerUsername = route.User != null ? route.User.UserName : null,
+                    LikesCount = route.LikesCount,
+                    IsLikedByCurrentUser = false
                 })
                 .ToListAsync();
 

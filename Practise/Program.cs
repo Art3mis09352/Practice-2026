@@ -94,7 +94,10 @@ namespace Practice
 
             app.UseExceptionHandler();
 
-            await app.InitializeDatabaseAsync();
+            if (!app.Environment.IsEnvironment("Testing"))
+            {
+                await app.InitializeDatabaseAsync();
+            }
 
             // Configure the HTTP request pipeline.
             

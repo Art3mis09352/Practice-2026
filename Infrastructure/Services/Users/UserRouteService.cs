@@ -42,9 +42,10 @@ namespace Infrastructure.Services.Users
                 UserId = userId,
                 Title = dto.Title,
                 Description = dto.Description,
+                CoverEmoji = NormalizeCoverEmoji(dto.CoverEmoji),
                 Budget = dto.Budget,
-                StartDate = dto.StartDate.Date,
-                EndDate = dto.EndDate.Date,
+                StartDate = dto.StartDate,
+                EndDate = dto.EndDate,
                 IsPublic = dto.IsPublic,
                 ShareToken = dto.IsPublic ? Guid.NewGuid().ToString("N") : null,
                 LikesCount = 0,
@@ -110,6 +111,12 @@ namespace Infrastructure.Services.Users
                             rdb.Block != null && rdb.Block.City == dto.City)));
             }
 
+            if (!string.IsNullOrWhiteSpace(dto.Search))
+            {
+                var search = dto.Search.Trim().ToLower();
+                query = query.Where(x => x.Title.ToLower().Contains(search));
+            }
+
             var totalCount = await query.CountAsync();
 
             var items = await query
@@ -122,6 +129,7 @@ namespace Infrastructure.Services.Users
                     Id = route.Id,
                     Title = route.Title,
                     Description = route.Description,
+                    CoverEmoji = route.CoverEmoji,
                     StartDate = route.StartDate,
                     EndDate = route.EndDate,
                     DaysCount = route.Days.Count,
@@ -132,6 +140,8 @@ namespace Infrastructure.Services.Users
                         .Where(rdb => rdb.Block != null)
                         .Select(rdb => rdb.Block!.City)
                         .FirstOrDefault(),
+                    IsPublic = route.IsPublic,
+                    OwnerUsername = route.User != null ? route.User.UserName : null,
                     LikesCount = route.LikesCount,
                     IsLikedByCurrentUser = route.Likes.Any(l => l.UserId == userId)
                 })
@@ -169,6 +179,9 @@ namespace Infrastructure.Services.Users
             if (dto.Description != null)
                 route.Description = dto.Description;
 
+            if (dto.CoverEmoji != null)
+                route.CoverEmoji = NormalizeCoverEmoji(dto.CoverEmoji);
+
             if (dto.Budget.HasValue)
             {
                 ValidateBudget(dto.Budget);
@@ -176,13 +189,16 @@ namespace Infrastructure.Services.Users
             }
 
             if (dto.StartDate.HasValue)
-                route.StartDate = dto.StartDate.Value.Date;
+                route.StartDate = dto.StartDate.Value;
 
             if (dto.EndDate.HasValue)
-                route.EndDate = dto.EndDate.Value.Date;
+                route.EndDate = dto.EndDate.Value;
 
-            ValidateRouteDates(route.StartDate, route.EndDate);
-            ValidateDayNumbers(route.Days.Select(x => x.DayNumber).ToList(), route.StartDate, route.EndDate);
+            var startDate = route.StartDate;
+            var endDate = route.EndDate;
+
+            ValidateRouteDates(startDate, endDate);
+            ValidateDayNumbers(route.Days.Select(x => x.DayNumber).ToList(), startDate, endDate);
 
             if (dto.IsPublic.HasValue)
             {
@@ -230,7 +246,10 @@ namespace Infrastructure.Services.Users
                 return null;
             }
 
-            ValidateSingleDayNumber(dto.DayNumber, route.StartDate, route.EndDate);
+            ValidateSingleDayNumber(
+                dto.DayNumber,
+                route.StartDate,
+                route.EndDate);
 
             if (route.Days.Any(x => x.DayNumber == dto.DayNumber))
             {
@@ -270,7 +289,10 @@ namespace Infrastructure.Services.Users
 
             if (dto.DayNumber.HasValue)
             {
-                ValidateSingleDayNumber(dto.DayNumber.Value, route.StartDate, route.EndDate);
+                ValidateSingleDayNumber(
+                    dto.DayNumber.Value,
+                    route.StartDate,
+                    route.EndDate);
 
                 var duplicate = route.Days.Any(x => x.Id != dayId && x.DayNumber == dto.DayNumber.Value);
                 if (duplicate)
@@ -465,6 +487,7 @@ namespace Infrastructure.Services.Users
                 Id = route.Id,
                 Title = route.Title,
                 Description = route.Description,
+                CoverEmoji = route.CoverEmoji,
                 StartDate = route.StartDate,
                 EndDate = route.EndDate,
                 IsPublic = route.IsPublic,
@@ -504,12 +527,17 @@ namespace Infrastructure.Services.Users
             };
         }
 
-        private static void ValidateRouteDates(DateTime startDate, DateTime endDate)
+        private static void ValidateRouteDates(DateOnly startDate, DateOnly endDate)
         {
-            if (startDate.Date > endDate.Date)
-            {
+            if (startDate > endDate)
+            { 
                 throw new InvalidOperationException("Дата начала маршрута не может быть позже даты окончания.");
             }
+        }
+
+        private static string? NormalizeCoverEmoji(string? coverEmoji)
+        {
+            return string.IsNullOrWhiteSpace(coverEmoji) ? null : coverEmoji.Trim();
         }
 
         private static void ValidateBudget(decimal? budget)
@@ -520,7 +548,7 @@ namespace Infrastructure.Services.Users
             }
         }
 
-        private static void ValidateCreateDays(List<CreateRouteDayDTO> days, DateTime startDate, DateTime endDate)
+        private static void ValidateCreateDays(List<CreateRouteDayDTO> days, DateOnly startDate, DateOnly endDate)
         {
             var dayNumbers = days.Select(x => x.DayNumber).ToList();
             ValidateDayNumbers(dayNumbers, startDate, endDate);
@@ -551,9 +579,11 @@ namespace Infrastructure.Services.Users
             }
         }
 
-        private static void ValidateDayNumbers(List<int> dayNumbers, DateTime startDate, DateTime endDate)
+        private static void ValidateDayNumbers(List<int> dayNumbers, DateOnly startDate, DateOnly endDate)
         {
-            var routeLength = (endDate.Date - startDate.Date).Days + 1;
+            var routeLength = endDate.DayNumber - startDate.DayNumber + 1;
+
+
 
             if (dayNumbers.Any(x => x < 1 || x > routeLength))
             {
@@ -561,7 +591,7 @@ namespace Infrastructure.Services.Users
             }
         }
 
-        private static void ValidateSingleDayNumber(int dayNumber, DateTime startDate, DateTime endDate)
+        private static void ValidateSingleDayNumber(int dayNumber, DateOnly startDate, DateOnly endDate)
         {
             ValidateDayNumbers(new List<int> { dayNumber }, startDate, endDate);
         }
@@ -671,60 +701,62 @@ namespace Infrastructure.Services.Users
             var pageSize = dto.PageSize < 1 ? 10 : dto.PageSize;
             if (pageSize > 50) pageSize = 50;
 
-            var query = _dbContext.RouteLikes
+            var query = _dbContext.Routes
                 .AsNoTracking()
-                .Where(x => x.UserId == userId)
-                .Select(x => x.Route!)
-                .Include(x => x.Days)
-                    .ThenInclude(x => x.RouteDayBlocks)
-                        .ThenInclude(x => x.Block)
-                .Include(x => x.Likes)
-                .AsQueryable();
+                .Where(r => r.Likes.Any(l => l.UserId == userId));
+
+            if (!string.IsNullOrWhiteSpace(dto.City))
+            {
+                query = query.Where(r => r.Days.Any(d =>
+                    d.RouteDayBlocks.Any(rdb => rdb.Block != null && rdb.Block.City == dto.City)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.Search))
+            {
+                var search = dto.Search.Trim().ToLower();
+                query = query.Where(r => r.Title.ToLower().Contains(search));
+            }
 
             if (dto.StartDateFrom.HasValue)
             {
-                query = query.Where(x => x.StartDate >= dto.StartDateFrom.Value);
+                query = query.Where(r => r.StartDate >= dto.StartDateFrom.Value);
             }
 
             if (dto.StartDateTo.HasValue)
             {
-                query = query.Where(x => x.StartDate <= dto.StartDateTo.Value);
-            }
-
-            if (!string.IsNullOrWhiteSpace(dto.City))
-            {
-                query = query.Where(x =>
-                    x.Days.Any(d =>
-                        d.RouteDayBlocks.Any(rdb =>
-                            rdb.Block != null && rdb.Block.City == dto.City)));
+                query = query.Where(r => r.StartDate <= dto.StartDateTo.Value);
             }
 
             var totalCount = await query.CountAsync();
 
             var items = await query
-                .OrderBy(x => x.StartDate)
-                .ThenBy(x => x.Title)
+                .OrderBy(r => r.StartDate)
+                .ThenBy(r => r.Title)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Select(route => new RoutePreviewDTO
+                .Select(r => new RoutePreviewDTO
                 {
-                    Id = route.Id,
-                    Title = route.Title,
-                    Description = route.Description,
-                    StartDate = route.StartDate,
-                    EndDate = route.EndDate,
-                    DaysCount = route.Days.Count,
-                    PointsCount = route.Days.SelectMany(d => d.RouteDayBlocks).Count(),
-                    Budget = route.Budget,
-                    FirstCity = route.Days
+                    Id = r.Id,
+                    Title = r.Title,
+                    Description = r.Description,
+                    CoverEmoji = r.CoverEmoji,
+                    StartDate = r.StartDate,
+                    EndDate = r.EndDate,
+                    Budget = r.Budget,
+                    DaysCount = r.Days.Count,
+                    PointsCount = r.Days.SelectMany(d => d.RouteDayBlocks).Count(),
+                    FirstCity = r.Days
                         .SelectMany(d => d.RouteDayBlocks)
                         .Where(rdb => rdb.Block != null)
                         .Select(rdb => rdb.Block!.City)
                         .FirstOrDefault(),
-                    LikesCount = route.LikesCount,
-                    IsLikedByCurrentUser = route.Likes.Any(l => l.UserId == userId)
+                    IsPublic = r.IsPublic,
+                    OwnerUsername = r.User != null ? r.User.UserName : null,
+                    LikesCount = r.LikesCount,
+                    IsLikedByCurrentUser = true
                 })
                 .ToListAsync();
+
 
             return new PagedRoutesResponseDTO
             {

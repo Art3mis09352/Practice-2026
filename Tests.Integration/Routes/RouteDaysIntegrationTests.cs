@@ -1,4 +1,4 @@
-ï»¿using Application.Data.DTO.Route.Read;
+using Application.Data.DTO.Route.Read;
 using System.Net;
 using System.Net.Http.Json;
 using Tests.Integration.Helpers;
@@ -26,8 +26,8 @@ public class RouteDaysIntegrationTests : IClassFixture<CustomWebApplicationFacto
         {
             title = "Route for day update",
             description = "Has two days",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-22T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-22",
             budget = 1000,
             isPublic = false,
             days = new[]
@@ -80,8 +80,8 @@ public class RouteDaysIntegrationTests : IClassFixture<CustomWebApplicationFacto
         {
             title = "Route for duplicate day",
             description = "Has two days",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-22T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-22",
             budget = 1000,
             isPublic = false,
             days = new[]
@@ -117,7 +117,7 @@ public class RouteDaysIntegrationTests : IClassFixture<CustomWebApplicationFacto
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
         var body = await response.Content.ReadAsStringAsync();
-        Assert.Contains("ÑƒÐ¶Ðµ ÑÑƒÑ‰ÐµÑÑ‚Ð²ÑƒÐµÑ‚", body);
+        Assert.Contains("óæå ñóùåñòâóåò", body);
     }
 
     [Fact]
@@ -132,8 +132,8 @@ public class RouteDaysIntegrationTests : IClassFixture<CustomWebApplicationFacto
         {
             title = "Route for day delete",
             description = "Has three days",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-22T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-22",
             budget = 1000,
             isPublic = false,
             days = new[]
@@ -193,8 +193,8 @@ public class RouteDaysIntegrationTests : IClassFixture<CustomWebApplicationFacto
         {
             title = "Owner route",
             description = "Private route",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-22T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-22",
             budget = 1000,
             isPublic = false,
             days = new[]

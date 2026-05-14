@@ -1,5 +1,9 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
+using Application.DTO.Block;
+using Application.DTO.User;
+using Infrastructure.Data;
+using Microsoft.Extensions.DependencyInjection;
 using Tests.Integration.Helpers;
 
 namespace Tests.Integration.Owner;
@@ -14,7 +18,7 @@ public class OwnerIntegrationTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
-    public async Task RegisterOwner_WithInvalidInviteToken_ReturnsForbidden()
+    public async Task RegisterOwner_WithoutInviteToken_ReturnsCreated()
     {
         var client = ApiTestHelper.CreateClient(_factory);
 
@@ -26,13 +30,13 @@ public class OwnerIntegrationTests : IClassFixture<CustomWebApplicationFactory>
             username = $"owner_{Guid.NewGuid():N}"[..12]
         };
 
-        var response = await client.PostAsJsonAsync("/api/auth/register-owner?inviteToken=wrong-token", payload);
+        var response = await client.PostAsJsonAsync("/api/auth/register-owner", payload);
 
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
     }
 
     [Fact]
-    public async Task RegisterOwner_WithValidInviteToken_ReturnsCreated()
+    public async Task RegisterOwner_ReturnsCreated_AndAssignsOwnerRole()
     {
         var client = ApiTestHelper.CreateClient(_factory);
 
@@ -44,7 +48,7 @@ public class OwnerIntegrationTests : IClassFixture<CustomWebApplicationFactory>
             username = $"owner_{Guid.NewGuid():N}"[..12]
         };
 
-        var response = await client.PostAsJsonAsync("/api/auth/register-owner?inviteToken=owner-test-token", payload);
+        var response = await client.PostAsJsonAsync("/api/auth/register-owner", payload);
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
@@ -83,9 +87,7 @@ public class OwnerIntegrationTests : IClassFixture<CustomWebApplicationFactory>
             username = $"owner_{Guid.NewGuid():N}"[..12]
         };
 
-        var registerResponse = await client.PostAsJsonAsync(
-            "/api/auth/register-owner?inviteToken=owner-test-token",
-            registerPayload);
+        var registerResponse = await client.PostAsJsonAsync("/api/auth/register-owner", registerPayload);
 
         Assert.Equal(HttpStatusCode.Created, registerResponse.StatusCode);
 
@@ -94,5 +96,57 @@ public class OwnerIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         var response = await client.GetAsync("/api/GetMyPoints/mypoints");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Owner_DeleteAccount_RemovesOwnedBlocks()
+    {
+        var client = ApiTestHelper.CreateClient(_factory);
+
+        var ownerEmail = $"owner_{Guid.NewGuid():N}@example.com";
+        var ownerPassword = "Password123!";
+
+        var registerResponse = await client.PostAsJsonAsync("/api/auth/register-owner", new
+        {
+            email = ownerEmail,
+            password = ownerPassword,
+            phone = "+10000000000",
+            username = $"owner_{Guid.NewGuid():N}"[..12]
+        });
+
+        Assert.Equal(HttpStatusCode.Created, registerResponse.StatusCode);
+
+        await ApiTestHelper.AuthenticateAsUserAsync(client, ownerEmail, ownerPassword);
+
+        var meResponse = await client.GetAsync("/api/user/me");
+        var me = await ApiTestHelper.ReadAsAsync<UserInfoResponseDTO>(meResponse);
+
+        var createBlockResponse = await client.PostAsJsonAsync("/api/owner/blocks", new
+        {
+            title = "Cascade block",
+            description = "Owned block",
+            category = "Museum",
+            city = "Moscow",
+            address = "Tverskaya 1",
+            latitude = 55.7558m,
+            longitude = 37.6173m,
+            avgPrice = 500
+        });
+
+        Assert.Equal(HttpStatusCode.Created, createBlockResponse.StatusCode);
+
+        var createdBlock = await ApiTestHelper.ReadAsAsync<BlockResponseDTO>(createBlockResponse);
+
+        var deleteResponse = await client.DeleteAsync("/api/user/me");
+
+        Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+
+        var loginResponse = await ApiTestHelper.LoginAsync(client, ownerEmail, ownerPassword);
+        Assert.Equal(HttpStatusCode.Unauthorized, loginResponse.StatusCode);
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Assert.DoesNotContain(db.Users, x => x.Id == me.Id);
+        Assert.DoesNotContain(db.Blocks, x => x.Id == createdBlock.Id);
     }
 }

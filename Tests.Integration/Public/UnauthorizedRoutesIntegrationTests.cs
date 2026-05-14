@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using Application.Data.DTO.Route.Read;
 using Tests.Integration.Helpers;
 
@@ -24,8 +24,8 @@ public class UnauthorizedRoutesIntegrationTests : IClassFixture<CustomWebApplica
         {
             title = "Public route",
             description = "Visible to all",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-21T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-21",
             budget = 1000,
             isPublic = true,
             days = new[]
@@ -62,8 +62,8 @@ public class UnauthorizedRoutesIntegrationTests : IClassFixture<CustomWebApplica
         {
             title = "Private route",
             description = "Not visible to all",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-21T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-21",
             budget = 1000,
             isPublic = false,
             days = new[]
@@ -101,8 +101,8 @@ public class UnauthorizedRoutesIntegrationTests : IClassFixture<CustomWebApplica
         {
             title = "Public route list item",
             description = "Visible",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-21T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-21",
             budget = 1000,
             isPublic = true,
             days = new[]
@@ -121,8 +121,8 @@ public class UnauthorizedRoutesIntegrationTests : IClassFixture<CustomWebApplica
         {
             title = "Private route list item",
             description = "Hidden",
-            startDate = "2026-05-22T00:00:00Z",
-            endDate = "2026-05-23T00:00:00Z",
+            startDate = "2026-05-22",
+            endDate = "2026-05-23",
             budget = 2000,
             isPublic = false,
             days = new[]
@@ -159,8 +159,8 @@ public class UnauthorizedRoutesIntegrationTests : IClassFixture<CustomWebApplica
         {
             title = "May route",
             description = "May",
-            startDate = "2026-05-20T00:00:00Z",
-            endDate = "2026-05-21T00:00:00Z",
+            startDate = "2026-05-20",
+            endDate = "2026-05-21",
             budget = 1000,
             isPublic = true,
             days = new[]
@@ -179,8 +179,8 @@ public class UnauthorizedRoutesIntegrationTests : IClassFixture<CustomWebApplica
         {
             title = "June route",
             description = "June",
-            startDate = "2026-06-20T00:00:00Z",
-            endDate = "2026-06-21T00:00:00Z",
+            startDate = "2026-06-20",
+            endDate = "2026-06-21",
             budget = 1000,
             isPublic = true,
             days = new[]

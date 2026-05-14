@@ -11,8 +11,8 @@ public static class RouteServiceSeedHelper
         {
             UserId = userId,
             Title = "Existing route",
-            StartDate = new DateTime(2026, 5, 20),
-            EndDate = new DateTime(2026, 5, 22),
+            StartDate = DateOnly.FromDateTime(new DateTime(2026, 5, 20)),
+            EndDate = DateOnly.FromDateTime(new DateTime(2026, 5, 22)),
             Days =
             [
                 new RouteDay
@@ -44,8 +44,8 @@ public static class RouteServiceSeedHelper
         {
             UserId = userId,
             Title = "Route with one day",
-            StartDate = new DateTime(2026, 5, 20),
-            EndDate = new DateTime(2026, 5, 22),
+            StartDate = DateOnly.FromDateTime(new DateTime(2026, 5, 20)),
+            EndDate = DateOnly.FromDateTime(new DateTime(2026, 5, 22)),
             Days =
             [
                 new RouteDay
@@ -75,8 +75,8 @@ public static class RouteServiceSeedHelper
         {
             UserId = userId,
             Title = "Route with blocks",
-            StartDate = new DateTime(2026, 5, 20),
-            EndDate = new DateTime(2026, 5, 22),
+            StartDate = DateOnly.FromDateTime(new DateTime(2026, 5, 20)),
+            EndDate = DateOnly.FromDateTime(new DateTime(2026, 5, 22)),
             Days =
             [
                 new RouteDay
