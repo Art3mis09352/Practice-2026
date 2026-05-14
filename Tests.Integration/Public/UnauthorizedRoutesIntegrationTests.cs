@@ -206,4 +206,79 @@ public class UnauthorizedRoutesIntegrationTests : IClassFixture<CustomWebApplica
         Assert.Contains(list.Items, x => x.Title == "June route");
         Assert.DoesNotContain(list.Items, x => x.Title == "May route");
     }
+
+    [Fact]
+    public async Task Public_Can_Sort_Public_Routes_By_Popularity()
+    {
+        var ownerClient = ApiTestHelper.CreateClient(_factory);
+        var likerAClient = ApiTestHelper.CreateClient(_factory);
+        var likerBClient = ApiTestHelper.CreateClient(_factory);
+
+        var (_, owner) = await ApiTestHelper.RegisterUserAsync(ownerClient);
+        var (_, likerA) = await ApiTestHelper.RegisterUserAsync(likerAClient);
+        var (_, likerB) = await ApiTestHelper.RegisterUserAsync(likerBClient);
+
+        await ApiTestHelper.AuthenticateAsUserAsync(ownerClient, owner.Email, owner.Password);
+        await ApiTestHelper.AuthenticateAsUserAsync(likerAClient, likerA.Email, likerA.Password);
+        await ApiTestHelper.AuthenticateAsUserAsync(likerBClient, likerB.Email, likerB.Password);
+
+        var lessPopular = await ApiTestHelper.CreateRouteAndReadAsync(ownerClient, new
+        {
+            title = "Cozy route",
+            description = "One like",
+            startDate = "2026-05-20",
+            endDate = "2026-05-21",
+            budget = 1000,
+            isPublic = true,
+            days = new[]
+            {
+                new
+                {
+                    dayNumber = 1,
+                    title = "Day 1",
+                    notes = "Cozy",
+                    blocks = Array.Empty<object>()
+                }
+            }
+        });
+
+        var morePopular = await ApiTestHelper.CreateRouteAndReadAsync(ownerClient, new
+        {
+            title = "Popular route",
+            description = "Two likes",
+            startDate = "2026-05-22",
+            endDate = "2026-05-23",
+            budget = 1000,
+            isPublic = true,
+            days = new[]
+            {
+                new
+                {
+                    dayNumber = 1,
+                    title = "Day 1",
+                    notes = "Popular",
+                    blocks = Array.Empty<object>()
+                }
+            }
+        });
+
+        await likerAClient.PostAsync($"/api/routes/{lessPopular.Id}/like", content: null);
+        await likerAClient.PostAsync($"/api/routes/{morePopular.Id}/like", content: null);
+        await likerBClient.PostAsync($"/api/routes/{morePopular.Id}/like", content: null);
+
+        var publicClient = ApiTestHelper.CreateClient(_factory);
+
+        var response = await publicClient.GetAsync(
+            "/api/unauthorizedroute/get%20routes%20info?sortBy=popular&search=route");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var list = await ApiTestHelper.ReadAsAsync<PagedRoutesResponseDTO>(response);
+        var topTwo = list.Items.Take(2).ToList();
+
+        Assert.Equal("Popular route", topTwo[0].Title);
+        Assert.Equal(2, topTwo[0].LikesCount);
+        Assert.Equal("Cozy route", topTwo[1].Title);
+        Assert.Equal(1, topTwo[1].LikesCount);
+    }
 }

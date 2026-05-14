@@ -130,9 +130,19 @@ namespace Practice.Controllers.UnauthorizedControllers
 
             var totalCount = await query.CountAsync();
 
-            var items = await query
-                .OrderBy(x => x.StartDate)
-                .ThenBy(x => x.Title)
+            var popularSort = string.Equals(
+                queryDto.SortBy?.Trim(),
+                "popular",
+                StringComparison.OrdinalIgnoreCase);
+
+            var sortedQuery = popularSort
+                ? query.OrderByDescending(x => x.LikesCount)
+                    .ThenBy(x => x.StartDate)
+                    .ThenBy(x => x.Title)
+                : query.OrderBy(x => x.StartDate)
+                    .ThenBy(x => x.Title);
+
+            var items = await sortedQuery
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .Select(route => new RoutePreviewDTO
