@@ -7,6 +7,7 @@ namespace Application.DTO.Block
 
         public string Title { get; set; } = string.Empty;
 
+
         public string? Category { get; set; }
 
         public string City { get; set; } = string.Empty;

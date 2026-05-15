@@ -4,6 +4,7 @@ using Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Swashbuckle.AspNetCore.Annotations;
 using System.Security.Claims;
 
@@ -19,6 +20,47 @@ namespace Practice.Controllers.OwnerControllers
         public OwnerController(AppDbContext dbContext)
         {
             _dbContext = dbContext;
+        }
+
+        [HttpGet("blocks/{id:int}")]
+        [SwaggerOperation(
+            Summary = "Получение точки владельца",
+            Description = "Возвращает полную информацию о точке, принадлежащей текущему владельцу."
+        )]
+        [ProducesResponseType(typeof(BlockResponseDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<BlockResponseDTO>> GetBlock(int id)
+        {
+            var ownerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(ownerId))
+            {
+                return Unauthorized();
+            }
+
+            var block = await _dbContext.Blocks
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == id && x.OwnerId == ownerId);
+
+            if (block == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(new BlockResponseDTO
+            {
+                Id = block.Id,
+                OwnerId = block.OwnerId,
+                Title = block.Title,
+                Description = block.Description,
+                Category = block.Category,
+                City = block.City,
+                Address = block.Address,
+                Latitude = block.Latitude,
+                Longitude = block.Longitude,
+                AvgPrice = block.AvgPrice,
+                IsApproved = block.IsApproved
+            });
         }
 
         [HttpPost("blocks")]

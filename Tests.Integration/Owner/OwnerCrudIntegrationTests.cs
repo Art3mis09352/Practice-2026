@@ -65,6 +65,51 @@ public class OwnerCrudIntegrationTests : IClassFixture<CustomWebApplicationFacto
     }
 
     [Fact]
+    public async Task Owner_Can_Get_Own_Block_Details()
+    {
+        var client = ApiTestHelper.CreateClient(_factory);
+
+        var ownerEmail = $"owner_{Guid.NewGuid():N}@example.com";
+        var ownerPassword = "Password123!";
+
+        await client.PostAsJsonAsync("/api/auth/register-owner", new
+        {
+            email = ownerEmail,
+            password = ownerPassword,
+            phone = "+10000000000",
+            username = $"owner_{Guid.NewGuid():N}"[..12]
+        });
+
+        await ApiTestHelper.AuthenticateAsUserAsync(client, ownerEmail, ownerPassword);
+
+        var createResponse = await client.PostAsJsonAsync("/api/owner/blocks", new
+        {
+            title = "Detailed owner block",
+            description = "Detailed description",
+            category = "Museum",
+            city = "Moscow",
+            address = "Tverskaya 10",
+            latitude = 55.7558m,
+            longitude = 37.6173m,
+            avgPrice = 1500
+        });
+
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+
+        var created = await ApiTestHelper.ReadAsAsync<BlockResponseDTO>(createResponse);
+
+        var getResponse = await client.GetAsync($"/api/owner/blocks/{created.Id}");
+
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+
+        var block = await ApiTestHelper.ReadAsAsync<BlockResponseDTO>(getResponse);
+        Assert.Equal(created.Id, block.Id);
+        Assert.Equal("Detailed owner block", block.Title);
+        Assert.Equal("Detailed description", block.Description);
+        Assert.Equal(1500, block.AvgPrice);
+    }
+
+    [Fact]
     public async Task Owner_Can_Update_Own_Block()
     {
         var client = ApiTestHelper.CreateClient(_factory);
