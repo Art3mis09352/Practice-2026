@@ -8,6 +8,8 @@ namespace Application.DTO.User
         public string Email { get; set; } = string.Empty;
         public string Username { get; set; } = string.Empty;
         public string? Phone { get; set; }
+        public bool EmailConfirmed { get; set; }
+        public bool? IsConfirmed { get; set; }
         public IList<string> Roles { get; set; } = new List<string>();
     }
 }

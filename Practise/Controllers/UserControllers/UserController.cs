@@ -59,6 +59,8 @@ namespace Practice.Controllers.UserControllers
                 Email = user.Email ?? string.Empty,
                 Username = user.UserName ?? string.Empty,
                 Phone = user.PhoneNumber,
+                EmailConfirmed = user.EmailConfirmed,
+                IsConfirmed = user.EmailConfirmed,
                 Roles = roles
             };
 

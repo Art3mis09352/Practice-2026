@@ -23,7 +23,9 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Practice.Progra
             {
                 ["Jwt:Key"] = "01234567890123456789012345678901",
                 ["Jwt:Issuer"] = "test-issuer",
-                ["Jwt:Audience"] = "test-audience"
+                ["Jwt:Audience"] = "test-audience",
+                ["EmailConfirmation:PublicApiBaseUrl"] = "https://localhost",
+                ["EmailConfirmation:FrontendResultUrl"] = ""
             };
 
             config.AddInMemoryCollection(settings);

@@ -12,6 +12,7 @@ namespace Infrastructure.Services.Identity
             services.AddIdentity<User, IdentityRole>(options =>
             {
                 options.User.RequireUniqueEmail = true;
+                options.SignIn.RequireConfirmedEmail = true;
 
                 options.Password.RequireDigit = false;
                 options.Password.RequireLowercase = false;

@@ -8,6 +8,9 @@ namespace Application.Data.DTO.Auth
         public string Username { get; set; } = string.Empty;
 
         public string? Phone { get; set; }
+        public bool EmailConfirmed { get; set; }
+        public bool RequiresEmailConfirmation { get; set; }
+        public string? Message { get; set; }
         public IList<string> Roles { get; set; } = new List<string>();
         public string? Token { get; set; }
     }

@@ -3,6 +3,7 @@
 using Application.Services;
 using Infrastructure.Data;
 using Infrastructure.Services.Auth;
+using Infrastructure.Services.Email;
 using Infrastructure.Services.Identity;
 using Infrastructure.Services.Infrastructure;
 using Infrastructure.Services.Users;
@@ -46,6 +47,8 @@ namespace Practice
 
             builder.Services.AddScoped<JwtTokenService>();
             builder.Services.AddScoped<AuthCookieService>();
+            builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
+            builder.Services.AddScoped<IEmailConfirmationService, EmailConfirmationService>();
             builder.Services.AddScoped<IUserRouteService, UserRouteService>();
 
             builder.Services.AddAuthorization();

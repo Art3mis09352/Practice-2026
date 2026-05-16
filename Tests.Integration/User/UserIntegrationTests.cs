@@ -32,6 +32,8 @@ public class UserIntegrationTests : IClassFixture<CustomWebApplicationFactory>
         Assert.Equal(dto.Email, body.Email);
         Assert.Equal(dto.Username, body.Username);
         Assert.Contains("User", body.Roles);
+        Assert.True(body.EmailConfirmed);
+        Assert.True(body.IsConfirmed);
     }
 
     [Fact]
