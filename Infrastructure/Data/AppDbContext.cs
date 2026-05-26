@@ -25,7 +25,7 @@ namespace Infrastructure.Data
         public DbSet<RouteDay> RouteDays => Set<RouteDay>();
         public DbSet<RouteDayBlock> RouteDayBlocks => Set<RouteDayBlock>();
         public DbSet<RouteLike> RouteLikes => Set<RouteLike>();
-
+        public DbSet<BlockPhoto> BlockPhotos => Set<BlockPhoto>();
 
 
 
@@ -38,7 +38,7 @@ namespace Infrastructure.Data
             modelBuilder.ApplyConfiguration(new BlockConfiguration());
             modelBuilder.ApplyConfiguration(new RouteDayBlockConfiguration());
             modelBuilder.ApplyConfiguration(new RouteLikeConfiguration());
-
+            modelBuilder.ApplyConfiguration(new BlockPhotoConfiguration());
 
             modelBuilder.Entity<User>(entity =>
             {

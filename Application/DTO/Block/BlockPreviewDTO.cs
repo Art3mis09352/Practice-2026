@@ -19,5 +19,7 @@ namespace Application.DTO.Block
         public decimal Longitude { get; set; }
 
         public bool IsApproved { get; set; }
+        public string? PreviewPhotoUrl { get; set; }
+        public int PhotosCount { get; set; }
     }
 }

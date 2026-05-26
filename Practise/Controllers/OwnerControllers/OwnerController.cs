@@ -1,6 +1,7 @@
 ﻿using Application.DTO.Block;
 using Domain.Entities;
 using Infrastructure.Data;
+using Infrastructure.Services.MinIO;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -16,11 +17,29 @@ namespace Practice.Controllers.OwnerControllers
     public class OwnerController : ControllerBase
     {
         private readonly AppDbContext _dbContext;
+        private readonly IObjectStorageService _objectStorageService;
 
-        public OwnerController(AppDbContext dbContext)
+        public OwnerController(AppDbContext dbContext, IObjectStorageService objectStorageService)
         {
             _dbContext = dbContext;
+            _objectStorageService = objectStorageService;
         }
+
+        private static readonly HashSet<string> AllowedImageContentTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "image/jpg",
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+        };
+
+        private static readonly HashSet<string> AllowedImageExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".webp",
+        };
 
         [HttpGet("blocks/{id:int}")]
         [SwaggerOperation(
@@ -30,7 +49,7 @@ namespace Practice.Controllers.OwnerControllers
         [ProducesResponseType(typeof(BlockResponseDTO), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<BlockResponseDTO>> GetBlock(int id)
+        public async Task<ActionResult<BlockResponseDTO>> GetBlock(int id, CancellationToken cancellationToken)
         {
             var ownerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrWhiteSpace(ownerId))
@@ -40,27 +59,15 @@ namespace Practice.Controllers.OwnerControllers
 
             var block = await _dbContext.Blocks
                 .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == id && x.OwnerId == ownerId);
+                .Include(b => b.Photos)
+                .FirstOrDefaultAsync(x => x.Id == id && x.OwnerId == ownerId, cancellationToken);
 
             if (block == null)
             {
                 return NotFound();
             }
 
-            return Ok(new BlockResponseDTO
-            {
-                Id = block.Id,
-                OwnerId = block.OwnerId,
-                Title = block.Title,
-                Description = block.Description,
-                Category = block.Category,
-                City = block.City,
-                Address = block.Address,
-                Latitude = block.Latitude,
-                Longitude = block.Longitude,
-                AvgPrice = block.AvgPrice,
-                IsApproved = block.IsApproved
-            });
+            return Ok(MapBlockResponse(block));
         }
 
         [HttpPost("blocks")]
@@ -71,7 +78,7 @@ namespace Practice.Controllers.OwnerControllers
         [ProducesResponseType(typeof(BlockResponseDTO), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
-        public async Task<ActionResult<BlockResponseDTO>> CreateBlock([FromBody] CreateBlockRequestDTO dto)
+        public async Task<ActionResult<BlockResponseDTO>> CreateBlock([FromBody] CreateBlockRequestDTO dto, CancellationToken cancellationToken)
         {
             var ownerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrWhiteSpace(ownerId))
@@ -94,24 +101,10 @@ namespace Practice.Controllers.OwnerControllers
             };
 
             _dbContext.Blocks.Add(block);
-            await _dbContext.SaveChangesAsync();
+            await _dbContext.SaveChangesAsync(cancellationToken);
 
-            var response = new BlockResponseDTO
-            {
-                Id = block.Id,
-                OwnerId = block.OwnerId,
-                Title = block.Title,
-                Description = block.Description,
-                Category = block.Category,
-                City = block.City,
-                Address = block.Address,
-                Latitude = block.Latitude,
-                Longitude = block.Longitude,
-                AvgPrice = block.AvgPrice,
-                IsApproved = block.IsApproved
-            };
 
-            return CreatedAtAction(nameof(CreateBlock), new { id = block.Id }, response);
+            return CreatedAtAction(nameof(CreateBlock), new { id = block.Id }, MapBlockResponse(block));
         }
 
         [HttpPatch("blocks/{id:int}")]
@@ -121,14 +114,16 @@ namespace Practice.Controllers.OwnerControllers
         )]
         [ProducesResponseType(typeof(BlockResponseDTO), StatusCodes.Status200OK)]
                 [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<BlockResponseDTO>> UpdateBlock(int id, [FromBody] UpdateBlockRequestDTO dto)
+        public async Task<ActionResult<BlockResponseDTO>> UpdateBlock(int id, [FromBody] UpdateBlockRequestDTO dto, CancellationToken cancellationToken)
         {
             var ownerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrWhiteSpace(ownerId))
             {
                 return Unauthorized();
             }
-            var block = await _dbContext.Blocks.FindAsync(id);
+            var block = await _dbContext.Blocks
+                                .Include(b => b.Photos)
+                                .FirstOrDefaultAsync(x => x.Id == id && x.OwnerId == ownerId, cancellationToken);
             if (block == null || block.OwnerId != ownerId)
             {
                 return NotFound();
@@ -146,7 +141,158 @@ namespace Practice.Controllers.OwnerControllers
             
             await _dbContext.SaveChangesAsync();
 
-            var response = new BlockResponseDTO
+            
+            return Ok(MapBlockResponse(block));
+        }
+        [HttpPost("blocks/{id:int}/photos")]
+        [Consumes("multipart/form-data")]
+        [SwaggerOperation(
+            Summary = "Загрузка фото точки",
+            Description = "Добавляет одно или несколько изображений к точке владельца."
+        )]
+        [ProducesResponseType(typeof(IReadOnlyCollection<BlockPhotoDTO>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<IReadOnlyCollection<BlockPhotoDTO>>> UploadPhotos(
+            int id,
+            [FromForm] List<IFormFile> files,
+            CancellationToken cancellationToken)
+        {
+            var ownerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(ownerId))
+            {
+                return Unauthorized();
+            }
+
+            var block = await _dbContext.Blocks
+                .Include(x => x.Photos)
+                .FirstOrDefaultAsync(x => x.Id == id && x.OwnerId == ownerId, cancellationToken);
+
+            if (block == null)
+            {
+                return NotFound();
+            }
+
+            if (files == null || files.Count == 0)
+            {
+                return BadRequest("Нужно передать хотя бы один файл.");
+            }
+
+            foreach (var file in files)
+            {
+                if (file.Length <= 0)
+                {
+                    return BadRequest("Один из файлов пустой.");
+                }
+
+                if (!AllowedImageContentTypes.Contains(file.ContentType) || !AllowedImageExtensions.Contains(Path.GetExtension(file.FileName)))
+                {
+                    return BadRequest("Разрешены только изображения в форматах jpeg, png и webp.");
+                }
+            }
+
+            foreach (var file in files)
+            {
+                await using var stream = file.OpenReadStream();
+
+                var objectName = await _objectStorageService.UploadBlockPhotoAsync(
+                    stream,
+                    file.FileName,
+                    file.ContentType,
+                    cancellationToken);
+
+                block.Photos.Add(new BlockPhoto
+                {
+                    ObjectName = objectName,
+                    OriginalFileName = file.FileName,
+                    ContentType = file.ContentType,
+                    Size = file.Length
+                });
+            }
+
+            block.IsApproved = false;
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            var response = block.Photos
+                .OrderBy(x => x.Id)
+                .Select(MapPhoto)
+                .ToList();
+
+            return Ok(response);
+        }
+
+        [HttpDelete("blocks/{blockId:int}/photos/{photoId:int}")]
+        [SwaggerOperation(
+            Summary = "Удаление фото точки",
+            Description = "Удаляет изображение из точки владельца."
+        )]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeletePhoto(
+            int blockId,
+            int photoId,
+            CancellationToken cancellationToken)
+        {
+            var ownerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(ownerId))
+            {
+                return Unauthorized();
+            }
+
+            var photo = await _dbContext.BlockPhotos
+                .Include(x => x.Block)
+                .FirstOrDefaultAsync(x => x.Id == photoId && x.BlockId == blockId, cancellationToken);
+
+            if (photo == null || photo.Block == null || photo.Block.OwnerId != ownerId)
+            {
+                return NotFound();
+            }
+
+            await _objectStorageService.DeleteObjectAsync(photo.ObjectName, cancellationToken);
+
+            photo.Block.IsApproved = false;
+            _dbContext.BlockPhotos.Remove(photo);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            return NoContent();
+        }
+        [HttpDelete("blocks/{id:int}")]
+        [SwaggerOperation(
+            Summary = "Удаление точки",
+            Description = "Удаляет существующую точку/блок."
+        )]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+                [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteBlock(int id, CancellationToken cancellationToken)
+        {
+            var ownerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(ownerId))
+            {
+                return Unauthorized();
+            }
+
+            var block = await _dbContext.Blocks
+                .Include(x => x.Photos)
+                .FirstOrDefaultAsync(x => x.Id == id && x.OwnerId == ownerId, cancellationToken);
+
+            if (block == null)
+            {
+                return NotFound();
+            }
+
+            foreach (var photo in block.Photos)
+            {
+                await _objectStorageService.DeleteObjectAsync(photo.ObjectName, cancellationToken);
+            }
+
+            _dbContext.Blocks.Remove(block);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            return NoContent();
+        }
+        private BlockResponseDTO MapBlockResponse(Block block)
+        {
+            return new BlockResponseDTO
             {
                 Id = block.Id,
                 OwnerId = block.OwnerId,
@@ -158,33 +304,20 @@ namespace Practice.Controllers.OwnerControllers
                 Latitude = block.Latitude,
                 Longitude = block.Longitude,
                 AvgPrice = block.AvgPrice,
-                IsApproved = block.IsApproved
+                IsApproved = block.IsApproved,
+                Photos = block.Photos
+                    .OrderBy(x => x.Id)
+                    .Select(MapPhoto)
+                    .ToList()
             };
-            return Ok(response);
         }
-
-        [HttpDelete("blocks/{id:int}")]
-        [SwaggerOperation(
-            Summary = "Удаление точки",
-            Description = "Удаляет существующую точку/блок."
-        )]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-                [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> DeleteBlock(int id)
+        private BlockPhotoDTO MapPhoto(BlockPhoto photo)
         {
-            var ownerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrWhiteSpace(ownerId))
+            return new BlockPhotoDTO
             {
-                return Unauthorized();
-            }
-            var block = await _dbContext.Blocks.FindAsync(id);
-            if (block == null || block.OwnerId != ownerId)
-            {
-                return NotFound();
-            }
-            _dbContext.Blocks.Remove(block);
-            await _dbContext.SaveChangesAsync();
-            return NoContent();
+                Id = photo.Id,
+                Url = _objectStorageService.GetPublicUrl(photo.ObjectName)
+            };
         }
     }
 }

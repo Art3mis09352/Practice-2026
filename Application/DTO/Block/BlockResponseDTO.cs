@@ -24,5 +24,6 @@ namespace Application.DTO.Block
         public decimal? AvgPrice { get; set; }
 
         public bool IsApproved { get; set; }
+        public IReadOnlyCollection<BlockPhotoDTO> Photos { get; set; } = Array.Empty<BlockPhotoDTO>();
     }
 }

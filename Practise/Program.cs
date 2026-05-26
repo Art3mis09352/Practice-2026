@@ -6,12 +6,15 @@ using Infrastructure.Services.Auth;
 using Infrastructure.Services.Email;
 using Infrastructure.Services.Identity;
 using Infrastructure.Services.Infrastructure;
+using Infrastructure.Services.MinIO;
+using Infrastructure.Services.Storage;
 using Infrastructure.Services.Users;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using Minio;
 using Practice.Infrastructure;
 using Practice.Swagger;
 using System.Text;
@@ -88,7 +91,19 @@ namespace Practice
                 builder.WebHost.UseUrls("https://localhost:7191", "http://localhost:5096");
             }
 
+            builder.Services.Configure<StorageOptions>(builder.Configuration.GetSection("Storage"));
 
+            builder.Services.AddSingleton<IMinioClient>(_ =>
+            {
+                var storage = builder.Configuration.GetSection("Storage");
+                return new MinioClient()
+                    .WithEndpoint(storage["Endpoint"])
+                    .WithCredentials(storage["AccessKey"], storage["SecretKey"])
+                    .WithSSL(bool.Parse(storage["UseSsl"] ?? "false"))
+                    .Build();
+            });
+
+            builder.Services.AddScoped<IObjectStorageService, MinioObjectStorageService>();
 
 
 

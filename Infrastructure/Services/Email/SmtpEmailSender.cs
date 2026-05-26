@@ -81,6 +81,12 @@ namespace Infrastructure.Services.Email
             {
                 client.Credentials = new NetworkCredential(username, password);
             }
+            Console.WriteLine($"Host: {host}");
+            Console.WriteLine($"Port: {port}");
+            Console.WriteLine($"Username: {username}");
+            Console.WriteLine($"Password length: {password?.Length}");
+            Console.WriteLine($"FromEmail: {fromEmail}");
+            Console.WriteLine($"EnableSsl: {enableSsl}");
 
             await client.SendMailAsync(message);
         }
