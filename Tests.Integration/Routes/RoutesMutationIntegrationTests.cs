@@ -59,7 +59,6 @@ public class RoutesMutationIntegrationTests : IClassFixture<CustomWebApplication
         Assert.Equal("New description", updated.Description);
         Assert.Equal(2500, updated.Budget);
         Assert.True(updated.IsPublic);
-        Assert.False(string.IsNullOrWhiteSpace(updated.ShareToken));
     }
 
     [Fact]

@@ -11,6 +11,7 @@ using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using AppUser = Domain.Entities.User;
 
 namespace Tests.Integration.Helpers;
 
@@ -99,7 +100,7 @@ public static class ApiTestHelper
     public static async Task ConfirmEmailAsync(CustomWebApplicationFactory factory, string email)
     {
         using var scope = factory.Services.CreateScope();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
 
         var user = await userManager.FindByEmailAsync(email)
             ?? throw new InvalidOperationException($"Пользователь с email {email} не найден.");
@@ -124,7 +125,7 @@ public static class ApiTestHelper
         string email)
     {
         using var scope = factory.Services.CreateScope();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
 
         var user = await userManager.FindByEmailAsync(email)
             ?? throw new InvalidOperationException($"Пользователь с email {email} не найден.");
