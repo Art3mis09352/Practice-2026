@@ -4,6 +4,7 @@ using Application.DTO.Route.Create;
 using Domain.Entities;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Route = Domain.Entities.Route;
 
 namespace Infrastructure.Services.Users
@@ -11,11 +12,15 @@ namespace Infrastructure.Services.Users
     public class UserRouteService : IUserRouteService
     {
         private readonly AppDbContext _dbContext;
+        private readonly IConfiguration _configuration;
 
-        public UserRouteService(AppDbContext dbContext)
+        public UserRouteService(AppDbContext dbContext, IConfiguration configuration)
         {
             _dbContext = dbContext;
+            _configuration = configuration;
         }
+
+        
 
         public async Task<RouteResponseDTO> CreateRouteAsync(string userId, CreateRouteDTO dto)
         {
@@ -47,7 +52,6 @@ namespace Infrastructure.Services.Users
                 StartDate = dto.StartDate,
                 EndDate = dto.EndDate,
                 IsPublic = dto.IsPublic,
-                ShareToken = dto.IsPublic ? Guid.NewGuid().ToString("N") : null,
                 LikesCount = 0,
                 Days = dto.Days
                     .OrderBy(x => x.DayNumber)
@@ -76,6 +80,123 @@ namespace Infrastructure.Services.Users
                 ?? throw new InvalidOperationException("Не удалось загрузить созданный маршрут.");
 
             return MapRouteResponse(createdRoute, userId);
+        }
+
+        public async Task<RouteShareLinkResponseDTO?> GetShareLinkAsync(string userId, int routeId)
+        {
+            var routeExists = await _dbContext.Routes
+                .AnyAsync(x => x.Id == routeId && x.UserId == userId);
+
+            if (!routeExists)
+            {
+                return null;
+            }
+
+            var now = DateTime.UtcNow;
+
+            var link = await _dbContext.RouteShareLinks
+                .AsNoTracking()
+                .Where(x => x.RouteId == routeId && x.IsActive && x.RevokedAt == null && x.ExpiresAt > now)
+                .OrderByDescending(x => x.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            return link == null ? null : MapShareLink(link);
+        }
+        public async Task<RouteShareLinkResponseDTO?> CreateShareLinkAsync(string userId, int routeId)
+        {
+            var route = await _dbContext.Routes
+                .FirstOrDefaultAsync(x => x.Id == routeId && x.UserId == userId);
+
+            if (route == null)
+            {
+                return null;
+            }
+
+            var now = DateTime.UtcNow;
+
+            var activeLink = await _dbContext.RouteShareLinks
+                .FirstOrDefaultAsync(x => x.RouteId == routeId && x.IsActive && x.RevokedAt == null && x.ExpiresAt > now);
+
+            if (activeLink != null)
+            {
+                return MapShareLink(activeLink);
+            }
+
+            await DeactivateAllShareLinksAsync(routeId, now);
+
+            var link = new RouteShareLink
+            {
+                RouteId = routeId,
+                Token = GenerateShareToken(),
+                IsActive = true,
+                CreatedAt = now,
+                ExpiresAt = now.AddDays(GetShareLifetimeDays())
+            };
+
+            _dbContext.RouteShareLinks.Add(link);
+            await _dbContext.SaveChangesAsync();
+
+            return MapShareLink(link);
+        }
+
+        public async Task<bool> RevokeShareLinkAsync(string userId, int routeId)
+        {
+            var routeExists = await _dbContext.Routes
+                .AnyAsync(x => x.Id == routeId && x.UserId == userId);
+
+            if (!routeExists)
+            {
+                return false;
+            }
+
+            var now = DateTime.UtcNow;
+
+            var activeLinks = await _dbContext.RouteShareLinks
+                .Where(x => x.RouteId == routeId && x.IsActive && x.RevokedAt == null)
+                .ToListAsync();
+
+            if (activeLinks.Count == 0)
+            {
+                return true;
+            }
+
+            foreach (var link in activeLinks)
+            {
+                link.IsActive = false;
+                link.RevokedAt = now;
+            }
+
+            await _dbContext.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<RouteShareLinkResponseDTO?> RegenerateShareLinkAsync(string userId, int routeId)
+        {
+            var route = await _dbContext.Routes
+                .FirstOrDefaultAsync(x => x.Id == routeId && x.UserId == userId);
+
+            if (route == null)
+            {
+                return null;
+            }
+
+            var now = DateTime.UtcNow;
+
+            await DeactivateAllShareLinksAsync(routeId, now);
+
+            var link = new RouteShareLink
+            {
+                RouteId = routeId,
+                Token = GenerateShareToken(),
+                IsActive = true,
+                CreatedAt = now,
+                ExpiresAt = now.AddDays(GetShareLifetimeDays())
+            };
+
+            _dbContext.RouteShareLinks.Add(link);
+            await _dbContext.SaveChangesAsync();
+
+            return MapShareLink(link);
         }
 
         public async Task<PagedRoutesResponseDTO> GetMyRoutesAsync(string userId, GetRoutesQueryDTO dto)
@@ -204,15 +325,7 @@ namespace Infrastructure.Services.Users
             {
                 route.IsPublic = dto.IsPublic.Value;
 
-                if (route.IsPublic && string.IsNullOrWhiteSpace(route.ShareToken))
-                {
-                    route.ShareToken = Guid.NewGuid().ToString("N");
-                }
-
-                if (!route.IsPublic)
-                {
-                    route.ShareToken = null;
-                }
+                
             }
 
             await _dbContext.SaveChangesAsync();
@@ -471,6 +584,7 @@ namespace Infrastructure.Services.Users
         private async Task<Route?> GetUserRouteWithDetailsAsync(string userId, int routeId)
         {
             return await _dbContext.Routes
+                .Include(x => x.User)
                 .Include(x => x.Likes)
                 .AsNoTracking()
                 .Where(x => x.Id == routeId && x.UserId == userId)
@@ -492,7 +606,8 @@ namespace Infrastructure.Services.Users
                 EndDate = route.EndDate,
                 IsPublic = route.IsPublic,
                 Budget = route.Budget,
-                ShareToken = route.ShareToken,
+                
+                OwnerUsername = route.User?.UserName,
                 LikesCount = route.LikesCount,
                 IsLikedByCurrentUser = route.Likes.Any(like => like.UserId == userId),
                 Days = route.Days
@@ -513,6 +628,7 @@ namespace Infrastructure.Services.Users
                                 OrderInDay = rdb.OrderInDay,
                                 Notes = rdb.Notes,
                                 Title = rdb.Block!.Title,
+                                Description = rdb.Block.Description,
                                 Category = rdb.Block.Category,
                                 City = rdb.Block.City,
                                 Address = rdb.Block.Address,
@@ -766,6 +882,58 @@ namespace Infrastructure.Services.Users
                 TotalCount = totalCount
             };
         }
+        private async Task DeactivateAllShareLinksAsync(int routeId, DateTime now)
+        {
+            var links = await _dbContext.RouteShareLinks
+                .Where(x => x.RouteId == routeId && x.IsActive)
+                .ToListAsync();
+
+            foreach (var link in links)
+            {
+                link.IsActive = false;
+                link.RevokedAt ??= now;
+            }
+
+            if (links.Count > 0)
+            {
+                await _dbContext.SaveChangesAsync();
+            }
+        }
+
+        private RouteShareLinkResponseDTO MapShareLink(RouteShareLink link)
+        {
+            return new RouteShareLinkResponseDTO
+            {
+                Token = link.Token,
+                Url = BuildShareUrl(link.Token),
+                ExpiresAt = link.ExpiresAt,
+                IsActive = link.IsActive && link.RevokedAt == null && link.ExpiresAt > DateTime.UtcNow
+            };
+        }
+
+        private string BuildShareUrl(string token)
+        {
+            var baseUrl = _configuration["ShareLinks:PublicBaseUrl"]?.TrimEnd('/');
+            if (string.IsNullOrWhiteSpace(baseUrl))
+            {
+                throw new InvalidOperationException("ShareLinks:PublicBaseUrl is not configured.");
+            }
+
+            return $"{baseUrl}/api/UnauthorizedRoute/by-token/{token}";
+        }
+
+        private int GetShareLifetimeDays()
+        {
+            var raw = _configuration["ShareLinks:LifetimeDays"];
+            return int.TryParse(raw, out var days) && days > 0 ? days : 30;
+        }
+
+        private static string GenerateShareToken()
+        {
+            return Guid.NewGuid().ToString("N");
+        }
+
+        
 
     }
 }

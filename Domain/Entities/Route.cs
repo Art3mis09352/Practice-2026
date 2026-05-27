@@ -20,7 +20,7 @@ namespace Domain.Entities
 
         public bool IsPublic { get; set; } = false;
 
-        public string? ShareToken { get; set; }
+       
         public int LikesCount { get; set; }
 
 
@@ -28,6 +28,6 @@ namespace Domain.Entities
         public User? User { get; set; }
         public ICollection<RouteDay> Days { get; set; } = new List<RouteDay>();
         public ICollection<RouteLike> Likes { get; set; } = new List<RouteLike>();
-
+        public ICollection<RouteShareLink> ShareLinks { get; set; } = new List<RouteShareLink>();
     }
 }

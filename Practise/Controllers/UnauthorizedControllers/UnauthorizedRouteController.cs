@@ -30,6 +30,7 @@ namespace Practice.Controllers.UnauthorizedControllers
             var route = await _appDbContext.Routes
                 .AsNoTracking()
                 .Where(x => x.Id == id && x.IsPublic)
+                .Include(x => x.User)
                 .Include(x => x.Days.OrderBy(d => d.DayNumber))
                     .ThenInclude(x => x.RouteDayBlocks.OrderBy(rdb => rdb.OrderInDay))
                         .ThenInclude(x => x.Block)
@@ -40,48 +41,9 @@ namespace Practice.Controllers.UnauthorizedControllers
                 return NotFound();
             }
 
-            var result = new RouteResponseDTO
-            {
-                Id = route.Id,
-                Title = route.Title,
-                Description = route.Description,
-                CoverEmoji = route.CoverEmoji,
-                StartDate = route.StartDate,
-                EndDate = route.EndDate,
-                IsPublic = route.IsPublic,
-                ShareToken = route.ShareToken,
-                Days = route.Days
-                    .OrderBy(d => d.DayNumber)
-                    .Select(day => new RouteDayInfoDTO
-                    {
-                        Id = day.Id,
-                        DayNumber = day.DayNumber,
-                        Title = day.Title,
-                        Notes = day.Notes,
-                        Blocks = day.RouteDayBlocks
-                            .OrderBy(rdb => rdb.OrderInDay)
-                            .Where(rdb => rdb.Block != null)
-                            .Select(rdb => new RouteDayBlockInfoDTO
-                            {
-                                Id = rdb.Id,
-                                BlockId = rdb.BlockId,
-                                OrderInDay = rdb.OrderInDay,
-                                Notes = rdb.Notes,
-                                Title = rdb.Block!.Title,
-                                Category = rdb.Block.Category,
-                                City = rdb.Block.City,
-                                Address = rdb.Block.Address,
-                                Latitude = rdb.Block.Latitude,
-                                Longitude = rdb.Block.Longitude,
-                                AvgPrice = rdb.Block.AvgPrice
-                            })
-                            .ToList()
-                    })
-                    .ToList(),
-                Budget = route.Budget
-            };
+            
 
-            return Ok(result);
+            return Ok(MapToResponse(route));
         }
 
         [HttpGet("get routes info")]
@@ -179,6 +141,86 @@ namespace Practice.Controllers.UnauthorizedControllers
             return Ok(response);
         }
 
-        
+        [HttpGet("by-token/{token}")]
+        [ProducesResponseType(typeof(RouteResponseDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<RouteResponseDTO>> GetByShareToken(string token)
+        {
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return NotFound();
+            }
+
+            var now = DateTime.UtcNow;
+
+            var route = await _appDbContext.Routes
+                .AsNoTracking()
+                .Include(x => x.User)
+                .Include(x => x.Days.OrderBy(d => d.DayNumber))
+                    .ThenInclude(x => x.RouteDayBlocks.OrderBy(rdb => rdb.OrderInDay))
+                        .ThenInclude(x => x.Block)
+                .FirstOrDefaultAsync(x =>
+                    x.ShareLinks.Any(sl =>
+                        sl.Token == token &&
+                        sl.IsActive &&
+                        sl.RevokedAt == null &&
+                        sl.ExpiresAt > now));
+
+            if (route == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(MapToResponse(route));
+        }
+
+        private static RouteResponseDTO MapToResponse(Domain.Entities.Route route)
+        {
+            return new RouteResponseDTO
+            {
+                Id = route.Id,
+                Title = route.Title,
+                Description = route.Description,
+                CoverEmoji = route.CoverEmoji,
+                StartDate = route.StartDate,
+                EndDate = route.EndDate,
+                IsPublic = route.IsPublic,
+                OwnerUsername = route.User?.UserName,
+                LikesCount = route.LikesCount,
+                IsLikedByCurrentUser = false,
+                Budget = route.Budget,
+                Days = route.Days
+                    .OrderBy(d => d.DayNumber)
+                    .Select(day => new RouteDayInfoDTO
+                    {
+                        Id = day.Id,
+                        DayNumber = day.DayNumber,
+                        Title = day.Title,
+                        Notes = day.Notes,
+                        Blocks = day.RouteDayBlocks
+                            .OrderBy(rdb => rdb.OrderInDay)
+                            .Where(rdb => rdb.Block != null)
+                            .Select(rdb => new RouteDayBlockInfoDTO
+                            {
+                                Id = rdb.Id,
+                                BlockId = rdb.BlockId,
+                                OrderInDay = rdb.OrderInDay,
+                                Notes = rdb.Notes,
+                                Title = rdb.Block!.Title,
+                                Description = rdb.Block.Description,
+                                Category = rdb.Block.Category,
+                                City = rdb.Block.City,
+                                Address = rdb.Block.Address,
+                                Latitude = rdb.Block.Latitude,
+                                Longitude = rdb.Block.Longitude,
+                                AvgPrice = rdb.Block.AvgPrice
+                            })
+                            .ToList()
+                    })
+                    .ToList()
+            };
+        }
+
+
     }
 }

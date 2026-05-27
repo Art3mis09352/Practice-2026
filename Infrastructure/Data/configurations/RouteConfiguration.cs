@@ -37,12 +37,7 @@ namespace Infrastructure.Data.configurations
             builder.Property(x => x.IsPublic)
                 .IsRequired();
 
-            builder.Property(x => x.ShareToken)
-                .HasMaxLength(100);
-
-            builder.HasIndex(x => x.ShareToken)
-                .IsUnique()
-                .HasFilter("\"ShareToken\" IS NOT NULL");
+            
             builder.Property(x => x.Budget)
                 .HasPrecision(18, 2);
 

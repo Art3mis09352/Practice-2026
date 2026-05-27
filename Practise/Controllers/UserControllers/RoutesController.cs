@@ -373,5 +373,105 @@ namespace Practice.Controllers.UserControllers
             var result = await _userRouteService.GetLikedRoutesAsync(userId, dto);
             return Ok(result);
         }
+
+        [HttpGet("{routeId:int}/share-link")]
+        [SwaggerOperation(
+            Summary = "Получить ссылку для шаринга маршрута",
+            Description = "Возвращает активную ссылку для шаринга маршрута, если она существует."
+        )]
+        [ProducesResponseType(typeof(RouteShareLinkResponseDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<RouteShareLinkResponseDTO>> GetShareLink(int routeId)
+        {
+            var userId = GetUserId();
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            var result = await _userRouteService.GetShareLinkAsync(userId, routeId);
+            if (result == null)
+            {
+                return NotFound("Маршрут или активная ссылка не найдены.");
+            }
+
+            return Ok(result);
+        }
+
+        [HttpPost("{routeId:int}/share-link")]
+        [SwaggerOperation(
+            Summary = "Создать ссылку для шаринга маршрута",
+            Description = "Создает новую ссылку для шаринга маршрута. Если активная ссылка уже существует, она будет возвращена."
+        )]
+        [ProducesResponseType(typeof(RouteShareLinkResponseDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<RouteShareLinkResponseDTO>> CreateShareLink(int routeId)
+        {
+            var userId = GetUserId();
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            var result = await _userRouteService.CreateShareLinkAsync(userId, routeId);
+            if (result == null)
+            {
+                return NotFound("Маршрут не найден.");
+            }
+
+            return Ok(result);
+        }
+
+        [HttpDelete("{routeId:int}/share-link")]
+        [SwaggerOperation(
+            Summary = "Отозвать ссылку для шаринга маршрута",
+            Description = "Отзывает активную ссылку для шаринга маршрута, делая ее недействительной."
+        )]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> RevokeShareLink(int routeId)
+        {
+            var userId = GetUserId();
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            var revoked = await _userRouteService.RevokeShareLinkAsync(userId, routeId);
+            if (!revoked)
+            {
+                return NotFound("Маршрут не найден.");
+            }
+
+            return NoContent();
+        }
+
+        [HttpPost("{routeId:int}/share-link/regenerate")]
+        [SwaggerOperation(
+            Summary = "Регенерировать ссылку для шаринга маршрута",
+            Description = "Регенерирует ссылку для шаринга маршрута, создавая новую ссылку и делая старую недействительной."
+        )]
+        [ProducesResponseType(typeof(RouteShareLinkResponseDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<RouteShareLinkResponseDTO>> RegenerateShareLink(int routeId)
+        {
+            var userId = GetUserId();
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            var result = await _userRouteService.RegenerateShareLinkAsync(userId, routeId);
+            if (result == null)
+            {
+                return NotFound("Маршрут не найден.");
+            }
+
+            return Ok(result);
+        }
     }
 }

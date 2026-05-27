@@ -72,6 +72,7 @@ namespace Practice.Controllers.OwnerControllers
                 {
                     Id = b.Id,
                     Title = b.Title,
+                    Description = b.Description,
                     Category = b.Category,
                     City = b.City,
                     Address = b.Address,

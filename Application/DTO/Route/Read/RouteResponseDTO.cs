@@ -11,7 +11,7 @@ namespace Application.Data.DTO.Route.Read
         public DateOnly EndDate { get; set; }
         public bool IsPublic { get; set; }
         public decimal? Budget { get; set; }
-        public string? ShareToken { get; set; }
+        public string? OwnerUsername { get; set; }
         public int LikesCount { get; set; }
         public bool IsLikedByCurrentUser { get; set; }
 
