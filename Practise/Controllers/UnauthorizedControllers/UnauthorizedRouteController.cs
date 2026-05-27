@@ -1,5 +1,6 @@
 ﻿using Application.Data.DTO.Route.Read;
 using Infrastructure.Data;
+using Infrastructure.Services.MinIO;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,10 +13,12 @@ namespace Practice.Controllers.UnauthorizedControllers
     public class UnauthorizedRouteController : ControllerBase
     {
         private readonly AppDbContext _appDbContext;
+        private readonly IObjectStorageService _objectStorageService;
 
-        public UnauthorizedRouteController(AppDbContext appDbContext)
+        public UnauthorizedRouteController(AppDbContext appDbContext, IObjectStorageService objectStorageService)
         {
             _appDbContext = appDbContext;
+            _objectStorageService = objectStorageService;
         }
 
         [HttpGet("{id:int}")]

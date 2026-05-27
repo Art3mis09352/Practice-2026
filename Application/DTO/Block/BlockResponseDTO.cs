@@ -22,6 +22,8 @@ namespace Application.DTO.Block
         public decimal Longitude { get; set; }
 
         public decimal? AvgPrice { get; set; }
+        public int? PreviewPhotoId { get; set; }
+        public string? PreviewPhotoUrl { get; set; }
 
         public bool IsApproved { get; set; }
         public IReadOnlyCollection<BlockPhotoDTO> Photos { get; set; } = Array.Empty<BlockPhotoDTO>();

@@ -3,6 +3,7 @@ using Application.DTO.Block;
 using Application.DTO.User;
 using Domain.Entities;
 using Infrastructure.Data;
+using Infrastructure.Services.MinIO;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -20,11 +21,13 @@ namespace Practice.Controllers
     {
         private readonly UserManager<User> _userManager;
         private readonly AppDbContext _dbContext;
+        private readonly IObjectStorageService _objectStorageService;
 
-        public AdminController(UserManager<User> userManager, AppDbContext dbContext)
+        public AdminController(UserManager<User> userManager, AppDbContext dbContext, IObjectStorageService objectStorageService)
         {
             _userManager = userManager;
             _dbContext = dbContext;
+            _objectStorageService = objectStorageService;
         }
 
         [HttpGet("blocks")]
@@ -134,10 +137,18 @@ namespace Practice.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult> DeleteBlock(int id)
         {
-            var block = await _dbContext.Blocks.FindAsync(id);
+            var block = await _dbContext.Blocks
+                .Include(x => x.Photos)
+                .FirstOrDefaultAsync(x => x.Id == id);
+
             if (block == null)
             {
                 return NotFound("Точка не найдена.");
+            }
+
+            foreach (var photo in block.Photos)
+            {
+                await _objectStorageService.DeleteObjectAsync(photo.ObjectName);
             }
 
             _dbContext.Blocks.Remove(block);
@@ -168,6 +179,56 @@ namespace Practice.Controllers
             }
 
             return NoContent();
+        }
+
+        [HttpGet("blocks/{id:int}")]
+        [SwaggerOperation(
+            Summary = "Получить точку",
+            Description = "Возвращает полную информацию о точке для администратора."
+        )]
+        [ProducesResponseType(typeof(BlockResponseDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<BlockResponseDTO>> GetBlock(int id)
+        {
+            var block = await _dbContext.Blocks
+                .AsNoTracking()
+                .Include(x => x.Photos)
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (block == null)
+            {
+                return NotFound("Точка не найдена.");
+            }
+
+            var orderedPhotos = block.Photos.OrderBy(p => p.Id).ToList();
+            var previewPhoto = orderedPhotos.FirstOrDefault(p => p.Id == block.PreviewPhotoId)
+                ?? orderedPhotos.FirstOrDefault();
+
+            return Ok(new BlockResponseDTO
+            {
+                Id = block.Id,
+                OwnerId = block.OwnerId,
+                Title = block.Title,
+                Description = block.Description,
+                Category = block.Category,
+                City = block.City,
+                Address = block.Address,
+                Latitude = block.Latitude,
+                Longitude = block.Longitude,
+                AvgPrice = block.AvgPrice,
+                IsApproved = block.IsApproved,
+                PreviewPhotoId = previewPhoto?.Id,
+                PreviewPhotoUrl = previewPhoto == null
+                    ? null
+                    : _objectStorageService.GetPublicUrl(previewPhoto.ObjectName),
+                            Photos = orderedPhotos
+                    .Select(p => new BlockPhotoDTO
+                    {
+                        Id = p.Id,
+                        Url = _objectStorageService.GetPublicUrl(p.ObjectName)
+                    })
+                    .ToList()
+            });
         }
 
         private async Task<ActionResult> DeleteUserInternalAsync(string id)
@@ -230,12 +291,19 @@ namespace Practice.Controllers
                 {
                     Id = b.Id,
                     Title = b.Title,
+                    Description = b.Description,
                     Category = b.Category,
                     City = b.City,
                     Address = b.Address,
                     Latitude = b.Latitude,
                     Longitude = b.Longitude,
-                    IsApproved = b.IsApproved
+                    IsApproved = b.IsApproved,
+                    PreviewPhotoUrl = b.Photos
+                        .Where(p => b.PreviewPhotoId.HasValue ? p.Id == b.PreviewPhotoId.Value : true)
+                        .OrderBy(p => p.Id)
+                        .Select(p => _objectStorageService.GetPublicUrl(p.ObjectName))
+                        .FirstOrDefault(),
+                    PhotosCount = b.Photos.Count()
                 })
                 .ToListAsync();
 
@@ -259,6 +327,7 @@ namespace Practice.Controllers
                 .ToListAsync();
 
             var blocks = await _dbContext.Blocks
+                .Include(x => x.Photos)
                 .Where(x => x.OwnerId == userId)
                 .ToListAsync();
 
@@ -274,6 +343,14 @@ namespace Practice.Controllers
 
             if (blocks.Count > 0)
             {
+                foreach (var block in blocks)
+                {
+                    foreach (var photo in block.Photos)
+                    {
+                        await _objectStorageService.DeleteObjectAsync(photo.ObjectName);
+                    }
+                }
+
                 _dbContext.Blocks.RemoveRange(blocks);
             }
 

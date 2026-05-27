@@ -1,5 +1,6 @@
 ﻿using Application.DTO.Block;
 using Infrastructure.Data;
+using Infrastructure.Services.MinIO;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Swashbuckle.AspNetCore.Annotations;
@@ -11,10 +12,12 @@ namespace Practice.Controllers
     public class BlocksController : ControllerBase
     {
         private readonly AppDbContext _dbContext;
+        private readonly IObjectStorageService _objectStorageService;
 
-        public BlocksController(AppDbContext dbContext)
+        public BlocksController(AppDbContext dbContext, IObjectStorageService objectStorageService)
         {
             _dbContext = dbContext;
+            _objectStorageService = objectStorageService;
         }
 
         [HttpGet]
@@ -58,12 +61,19 @@ namespace Practice.Controllers
                 {
                     Id = b.Id,
                     Title = b.Title,
+                    Description = b.Description,
                     Category = b.Category,
                     City = b.City,
                     Address = b.Address,
                     Latitude = b.Latitude,
                     Longitude = b.Longitude,
-                    IsApproved = b.IsApproved
+                    IsApproved = b.IsApproved,
+                    PreviewPhotoUrl = b.Photos
+                        .Where(p => b.PreviewPhotoId.HasValue ? p.Id == b.PreviewPhotoId.Value : true)
+                        .OrderBy(p => p.Id)
+                        .Select(p => _objectStorageService.GetPublicUrl(p.ObjectName))
+                        .FirstOrDefault(),
+                    PhotosCount = b.Photos.Count()
                 })
                 .ToListAsync();
 

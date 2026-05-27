@@ -1,5 +1,6 @@
 ﻿using Application.DTO.Block;
 using Infrastructure.Data;
+using Infrastructure.Services.MinIO;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,10 +13,12 @@ namespace Practice.Controllers.UnauthorizedControllers
     public class UnauthorizedPointController : ControllerBase
     {
         private readonly AppDbContext _appDbContext;
+        private readonly IObjectStorageService _objectStorageService;
 
-        public UnauthorizedPointController(AppDbContext appDbContext)
+        public UnauthorizedPointController(AppDbContext appDbContext, IObjectStorageService objectStorageService)
         {
             _appDbContext = appDbContext;
+            _objectStorageService = objectStorageService;
         }
 
         [HttpGet("{id:int}")]
@@ -29,12 +32,16 @@ namespace Practice.Controllers.UnauthorizedControllers
         {
             var point = await _appDbContext.Blocks
                 .AsNoTracking()
+                .Include(b => b.Photos)
                 .FirstOrDefaultAsync(x => x.Id == id && x.IsApproved);
 
             if (point == null)
             {
                 return NotFound();
             }
+            var orderedPhotos = point.Photos.OrderBy(p => p.Id).ToList();
+            var previewPhoto = orderedPhotos.FirstOrDefault(p => p.Id == point.PreviewPhotoId)
+                ?? orderedPhotos.FirstOrDefault();
 
             var result = new BlockResponseDTO
             {
@@ -48,7 +55,14 @@ namespace Practice.Controllers.UnauthorizedControllers
                 Latitude = point.Latitude,
                 Longitude = point.Longitude,
                 AvgPrice = point.AvgPrice,
-                IsApproved = point.IsApproved
+                IsApproved = point.IsApproved,
+                PreviewPhotoId = previewPhoto?.Id,
+                PreviewPhotoUrl = previewPhoto == null ? null : _objectStorageService.GetPublicUrl(previewPhoto.ObjectName),
+                Photos = orderedPhotos.Select(p => new BlockPhotoDTO
+                {
+                    Id = p.Id,
+                    Url = _objectStorageService.GetPublicUrl(p.ObjectName)
+                }).ToList()
             };
 
             return Ok(result);
@@ -98,12 +112,19 @@ namespace Practice.Controllers.UnauthorizedControllers
                 {
                     Id = b.Id,
                     Title = b.Title,
+                    Description = b.Description,
                     Category = b.Category,
                     City = b.City,
                     Address = b.Address,
                     Latitude = b.Latitude,
                     Longitude = b.Longitude,
-                    IsApproved = b.IsApproved
+                    IsApproved = b.IsApproved,
+                    PreviewPhotoUrl = b.Photos
+                        .Where(p => b.PreviewPhotoId.HasValue ? p.Id == b.PreviewPhotoId.Value : true)
+                        .OrderBy(p => p.Id)
+                        .Select(p => _objectStorageService.GetPublicUrl(p.ObjectName))
+                        .FirstOrDefault(),
+                    PhotosCount = b.Photos.Count()
                 })
                 .ToListAsync();
 

@@ -22,13 +22,15 @@
         public decimal? AvgPrice { get; set; }
 
         public bool IsApproved { get; set; } = false;
+        public int? PreviewPhotoId { get; set; }
 
-        
+
         // Navigation Properties
         public User? Owner { get; set; }
         public ICollection<BlockStat> BlockStats { get; set; } = new List<BlockStat>();
         public ICollection<RouteDayBlock> RouteDayBlocks { get; set; } = new List<RouteDayBlock>();
         public ICollection<BlockPhoto> Photos { get; set; } = new List<BlockPhoto>();
+        public BlockPhoto? PreviewPhoto { get; set; }
 
 
     }

@@ -63,6 +63,10 @@ namespace Infrastructure.Data.configurations
                 .WithOne(x => x.Block)
                 .HasForeignKey(x => x.BlockId)
                 .OnDelete(DeleteBehavior.Cascade);
+            builder.HasOne(x => x.PreviewPhoto)
+                .WithMany()
+                .HasForeignKey(x => x.PreviewPhotoId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

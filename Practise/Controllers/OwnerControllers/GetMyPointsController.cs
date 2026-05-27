@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Swashbuckle.AspNetCore.Annotations;
+using Infrastructure.Services.MinIO;
 using System.Security.Claims;
 
 namespace Practice.Controllers.OwnerControllers
@@ -15,10 +16,12 @@ namespace Practice.Controllers.OwnerControllers
     public class GetMyPointsController : ControllerBase
     {
         private readonly AppDbContext _appDbContext;
+        private readonly IObjectStorageService _storageService;
 
-        public GetMyPointsController(AppDbContext dbContext)
+        public GetMyPointsController(AppDbContext dbContext, IObjectStorageService storageService)
         {
             _appDbContext = dbContext;
+            _storageService = storageService;
         }
 
         [HttpGet("mypoints")]
@@ -78,7 +81,13 @@ namespace Practice.Controllers.OwnerControllers
                     Address = b.Address,
                     Latitude = b.Latitude,
                     Longitude = b.Longitude,
-                    IsApproved = b.IsApproved
+                    IsApproved = b.IsApproved,
+                    PreviewPhotoUrl = b.Photos
+                        .Where(p => b.PreviewPhotoId.HasValue ? p.Id == b.PreviewPhotoId.Value : true)
+                        .OrderBy(p => p.Id)
+                        .Select(p => _storageService.GetPublicUrl(p.ObjectName))
+                        .FirstOrDefault(),
+                    PhotosCount = b.Photos.Count()
                 })
                 .ToListAsync();
 

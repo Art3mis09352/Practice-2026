@@ -213,6 +213,16 @@ namespace Practice.Controllers.OwnerControllers
             block.IsApproved = false;
             await _dbContext.SaveChangesAsync(cancellationToken);
 
+            if (block.PreviewPhotoId == null)
+            {
+                var firstPhotoId = block.Photos.OrderBy(x => x.Id).Select(x => x.Id).FirstOrDefault();
+                if (firstPhotoId != 0)
+                {
+                    block.PreviewPhotoId = firstPhotoId;
+                    await _dbContext.SaveChangesAsync(cancellationToken);
+                }
+            }
+
             var response = block.Photos
                 .OrderBy(x => x.Id)
                 .Select(MapPhoto)
@@ -247,11 +257,21 @@ namespace Practice.Controllers.OwnerControllers
             {
                 return NotFound();
             }
-
+            var wasPreview = photo.Block.PreviewPhotoId == photo.Id;
             await _objectStorageService.DeleteObjectAsync(photo.ObjectName, cancellationToken);
 
             photo.Block.IsApproved = false;
             _dbContext.BlockPhotos.Remove(photo);
+            if (wasPreview)
+            {
+                var nextPreviewId = await _dbContext.BlockPhotos
+                    .Where(x => x.BlockId == blockId && x.Id != photoId)
+                    .OrderBy(x => x.Id)
+                    .Select(x => (int?)x.Id)
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                photo.Block.PreviewPhotoId = nextPreviewId;
+            }
             await _dbContext.SaveChangesAsync(cancellationToken);
 
             return NoContent();
@@ -290,8 +310,57 @@ namespace Practice.Controllers.OwnerControllers
 
             return NoContent();
         }
+
+        [HttpPatch("blocks/{blockId:int}/photos/{photoId:int}/preview")]
+        [SwaggerOperation(
+            Summary = "Установить превью фото",
+            Description = "Назначает выбранное фото превью-изображением точки владельца."
+        )]
+        [ProducesResponseType(typeof(BlockResponseDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<BlockResponseDTO>> SetPreviewPhoto(
+            int blockId,
+            int photoId,
+            CancellationToken cancellationToken)
+        {
+            var ownerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(ownerId))
+            {
+                return Unauthorized();
+            }
+
+            var block = await _dbContext.Blocks
+                .Include(x => x.Photos)
+                .FirstOrDefaultAsync(x => x.Id == blockId && x.OwnerId == ownerId, cancellationToken);
+
+            if (block == null)
+            {
+                return NotFound();
+            }
+
+            var photoExists = block.Photos.Any(x => x.Id == photoId);
+            if (!photoExists)
+            {
+                return NotFound("Фото не найдено в этой точке.");
+            }
+
+            block.PreviewPhotoId = photoId;
+            block.IsApproved = false;
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            return Ok(MapBlockResponse(block));
+        }
+
         private BlockResponseDTO MapBlockResponse(Block block)
         {
+            var orderedPhotos = block.Photos
+                .OrderBy(x => x.Id)
+                .ToList();
+
+            var previewPhoto = orderedPhotos.FirstOrDefault(x => x.Id == block.PreviewPhotoId)
+                ?? orderedPhotos.FirstOrDefault();
+
             return new BlockResponseDTO
             {
                 Id = block.Id,
@@ -305,8 +374,11 @@ namespace Practice.Controllers.OwnerControllers
                 Longitude = block.Longitude,
                 AvgPrice = block.AvgPrice,
                 IsApproved = block.IsApproved,
-                Photos = block.Photos
-                    .OrderBy(x => x.Id)
+                PreviewPhotoId = previewPhoto?.Id,
+                PreviewPhotoUrl = previewPhoto == null
+                    ? null
+                    : _objectStorageService.GetPublicUrl(previewPhoto.ObjectName),
+                Photos = orderedPhotos
                     .Select(MapPhoto)
                     .ToList()
             };
