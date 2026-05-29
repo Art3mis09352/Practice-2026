@@ -38,6 +38,11 @@
 
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Database=${POSTGRES_DB}
 
+      Cors__AllowedOrigins__0: ${Cors__AllowedOrigins__0}
+      Cors__AllowedOrigins__1: ${Cors__AllowedOrigins__1}
+      Cors__AllowedOrigins__2: ${Cors__AllowedOrigins__2}
+      Cors__AllowedOrigins__3: ${Cors__AllowedOrigins__3}
+
       Storage__Endpoint: minio:9000
       Storage__AccessKey: ${MINIO_ROOT_USER}
       Storage__SecretKey: ${MINIO_ROOT_PASSWORD}
