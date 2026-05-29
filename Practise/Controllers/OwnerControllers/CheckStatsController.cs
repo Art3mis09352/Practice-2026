@@ -1,6 +1,7 @@
-﻿using Infrastructure.Data;
+﻿using Application.Features.Common;
+using Application.Features.Owner;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -11,25 +12,19 @@ namespace Practice.Controllers.OwnerControllers
     [Authorize(Roles = "Owner")]
     public class CheckStatsController : ControllerBase
     {
-        private readonly AppDbContext _appDbContext;
+        private readonly IMediator _mediator;
 
-        public CheckStatsController(AppDbContext dbContext)
+        public CheckStatsController(IMediator mediator)
         {
-            _appDbContext = dbContext;
+            _mediator = mediator;
         }
 
         [HttpGet("stats")]
         public async Task<ActionResult> GetStats()
         {
             var ownerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (ownerId == null || !User.IsInRole("Owner"))
-            {
-                return Unauthorized();
-            }
-
-            // Your logic to get stats goes here
-
-            return Ok();
+            var result = await _mediator.Send(new GetOwnerStatsQuery(ownerId, User.IsInRole("Owner")));
+            return result.ToActionResult(this);
         }
     }
 }

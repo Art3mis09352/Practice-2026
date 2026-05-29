@@ -1,13 +1,12 @@
 using Application.DTO.Admin;
 using Application.DTO.Block;
-using Application.DTO.User;
-using Domain.Entities;
-using Infrastructure.Data;
+using Application.Features.Admin;
+using GetAdminBlocksRequest = Application.Features.Admin.GetAdminBlocksQuery;
+using Application.Features.Common;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Swashbuckle.AspNetCore.Annotations;
 using System.Security.Claims;
 
@@ -18,13 +17,11 @@ namespace Practice.Controllers
     [Authorize(Roles = "Admin")]
     public class AdminController : ControllerBase
     {
-        private readonly UserManager<User> _userManager;
-        private readonly AppDbContext _dbContext;
+        private readonly IMediator _mediator;
 
-        public AdminController(UserManager<User> userManager, AppDbContext dbContext)
+        public AdminController(IMediator mediator)
         {
-            _userManager = userManager;
-            _dbContext = dbContext;
+            _mediator = mediator;
         }
 
         [HttpGet("blocks")]
@@ -35,7 +32,8 @@ namespace Practice.Controllers
         [ProducesResponseType(typeof(PagedBlocksResponseDTO), StatusCodes.Status200OK)]
         public async Task<ActionResult<PagedBlocksResponseDTO>> GetBlocks([FromQuery] GetAdminBlocksQueryDTO dto)
         {
-            return Ok(await GetBlocksResponseAsync(dto, pendingOnly: false));
+            var result = await _mediator.Send(new GetAdminBlocksRequest(dto, PendingOnly: false));
+            return Ok(result);
         }
 
         [HttpGet("blocks/pending")]
@@ -46,7 +44,8 @@ namespace Practice.Controllers
         [ProducesResponseType(typeof(PagedBlocksResponseDTO), StatusCodes.Status200OK)]
         public async Task<ActionResult<PagedBlocksResponseDTO>> GetPendingBlocks([FromQuery] GetAdminBlocksQueryDTO dto)
         {
-            return Ok(await GetBlocksResponseAsync(dto, pendingOnly: true));
+            var result = await _mediator.Send(new GetAdminBlocksRequest(dto, PendingOnly: true));
+            return Ok(result);
         }
 
         [HttpGet("users")]
@@ -57,52 +56,8 @@ namespace Practice.Controllers
         [ProducesResponseType(typeof(PagedAdminUsersResponseDTO), StatusCodes.Status200OK)]
         public async Task<ActionResult<PagedAdminUsersResponseDTO>> GetUsers([FromQuery] GetAdminUsersQueryDTO dto)
         {
-            var page = dto.Page < 1 ? 1 : dto.Page;
-            var pageSize = dto.PageSize < 1 ? 10 : dto.PageSize;
-            if (pageSize > 50) pageSize = 50;
-
-            var query = _userManager.Users
-                .AsNoTracking()
-                .AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(dto.Search))
-            {
-                var search = dto.Search.Trim().ToLower();
-                query = query.Where(u =>
-                    (u.UserName != null && u.UserName.ToLower().Contains(search)) ||
-                    (u.Email != null && u.Email.ToLower().Contains(search)));
-            }
-
-            var totalCount = await query.CountAsync();
-
-            var users = await query
-                .OrderBy(u => u.UserName)
-                .ThenBy(u => u.Email)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            var items = new List<UserInfoResponseDTO>(users.Count);
-            foreach (var user in users)
-            {
-                var roles = await _userManager.GetRolesAsync(user);
-                items.Add(new UserInfoResponseDTO
-                {
-                    Id = user.Id,
-                    Email = user.Email ?? string.Empty,
-                    Username = user.UserName ?? string.Empty,
-                    Phone = user.PhoneNumber,
-                    Roles = roles
-                });
-            }
-
-            return Ok(new PagedAdminUsersResponseDTO
-            {
-                Items = items,
-                Page = page,
-                PageSize = pageSize,
-                TotalCount = totalCount
-            });
+            var result = await _mediator.Send(new Application.Features.Admin.GetAdminUsersQuery(dto));
+            return Ok(result);
         }
 
         [HttpDelete("users/{id}")]
@@ -134,16 +89,8 @@ namespace Practice.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult> DeleteBlock(int id)
         {
-            var block = await _dbContext.Blocks.FindAsync(id);
-            if (block == null)
-            {
-                return NotFound("Точка не найдена.");
-            }
-
-            _dbContext.Blocks.Remove(block);
-            await _dbContext.SaveChangesAsync();
-
-            return NoContent();
+            var result = await _mediator.Send(new DeleteAdminBlockCommand(id));
+            return result.ToActionResult(this);
         }
 
         [HttpPatch("blocks/{id:int}/approve")]
@@ -155,132 +102,15 @@ namespace Practice.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult> ApproveBlock(int id)
         {
-            var block = await _dbContext.Blocks.FindAsync(id);
-            if (block == null)
-            {
-                return NotFound("Точка не найдена.");
-            }
-
-            if (!block.IsApproved)
-            {
-                block.IsApproved = true;
-                await _dbContext.SaveChangesAsync();
-            }
-
-            return NoContent();
+            var result = await _mediator.Send(new ApproveAdminBlockCommand(id));
+            return result.ToActionResult(this);
         }
 
         private async Task<ActionResult> DeleteUserInternalAsync(string id)
         {
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!string.IsNullOrWhiteSpace(currentUserId) && currentUserId == id)
-            {
-                return BadRequest("Администратор не может удалить сам себя.");
-            }
-
-            var user = await _userManager.FindByIdAsync(id);
-            if (user == null)
-            {
-                return NotFound("Пользователь не найден.");
-            }
-
-            await DeleteUserDependenciesAsync(user.Id);
-
-            var result = await _userManager.DeleteAsync(user);
-            if (!result.Succeeded)
-            {
-                return BadRequest(result.Errors.Select(x => x.Description));
-            }
-
-            return NoContent();
-        }
-
-        private async Task<PagedBlocksResponseDTO> GetBlocksResponseAsync(GetAdminBlocksQueryDTO dto, bool pendingOnly)
-        {
-            var page = dto.Page < 1 ? 1 : dto.Page;
-            var pageSize = dto.PageSize < 1 ? 10 : dto.PageSize;
-            if (pageSize > 50) pageSize = 50;
-
-            var query = _dbContext.Blocks
-                .AsNoTracking()
-                .AsQueryable();
-
-            if (pendingOnly)
-            {
-                query = query.Where(b => !b.IsApproved);
-            }
-
-            if (!string.IsNullOrWhiteSpace(dto.Search))
-            {
-                var search = dto.Search.Trim().ToLower();
-                query = query.Where(b =>
-                    b.Title.ToLower().Contains(search) ||
-                    (b.Address != null && b.Address.ToLower().Contains(search)));
-            }
-
-            var totalCount = await query.CountAsync();
-
-            var items = await query
-                .OrderBy(b => b.IsApproved)
-                .ThenBy(b => b.Title)
-                .ThenBy(b => b.Id)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(b => new BlockPreviewDTO
-                {
-                    Id = b.Id,
-                    Title = b.Title,
-                    Category = b.Category,
-                    City = b.City,
-                    Address = b.Address,
-                    Latitude = b.Latitude,
-                    Longitude = b.Longitude,
-                    IsApproved = b.IsApproved
-                })
-                .ToListAsync();
-
-            return new PagedBlocksResponseDTO
-            {
-                Items = items,
-                Page = page,
-                PageSize = pageSize,
-                TotalCount = totalCount
-            };
-        }
-
-        private async Task DeleteUserDependenciesAsync(string userId)
-        {
-            var routeLikes = await _dbContext.RouteLikes
-                .Where(x => x.UserId == userId)
-                .ToListAsync();
-
-            var routes = await _dbContext.Routes
-                .Where(x => x.UserId == userId)
-                .ToListAsync();
-
-            var blocks = await _dbContext.Blocks
-                .Where(x => x.OwnerId == userId)
-                .ToListAsync();
-
-            if (routeLikes.Count > 0)
-            {
-                _dbContext.RouteLikes.RemoveRange(routeLikes);
-            }
-
-            if (routes.Count > 0)
-            {
-                _dbContext.Routes.RemoveRange(routes);
-            }
-
-            if (blocks.Count > 0)
-            {
-                _dbContext.Blocks.RemoveRange(blocks);
-            }
-
-            if (routeLikes.Count > 0 || routes.Count > 0 || blocks.Count > 0)
-            {
-                await _dbContext.SaveChangesAsync();
-            }
+            var result = await _mediator.Send(new DeleteAdminUserCommand(id, currentUserId));
+            return result.ToActionResult(this);
         }
     }
 }

@@ -1,9 +1,10 @@
 ﻿using Application.DTO.Block;
-using Infrastructure.Data;
+using Application.Features.Common;
+using Application.Features.Owner;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Swashbuckle.AspNetCore.Annotations;
 using System.Security.Claims;
 
@@ -14,11 +15,11 @@ namespace Practice.Controllers.OwnerControllers
     [Authorize(Roles = "Owner")]
     public class GetMyPointsController : ControllerBase
     {
-        private readonly AppDbContext _appDbContext;
+        private readonly IMediator _mediator;
 
-        public GetMyPointsController(AppDbContext dbContext)
+        public GetMyPointsController(IMediator mediator)
         {
-            _appDbContext = dbContext;
+            _mediator = mediator;
         }
 
         [HttpGet("mypoints")]
@@ -31,65 +32,8 @@ namespace Practice.Controllers.OwnerControllers
         public async Task<ActionResult<PagedBlocksResponseDTO>> GetBlocks([FromQuery] GetBlocksQueryDTO queryDto)
         {
             var ownerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (ownerId == null || !User.IsInRole("Owner"))
-            {
-                return Unauthorized();
-            }
-            var page = queryDto.Page < 1 ? 1 : queryDto.Page;
-            var pageSize = queryDto.PageSize < 1 ? 10 : queryDto.PageSize;
-            if (pageSize > 50) pageSize = 50;
-
-            var query = _appDbContext.Blocks
-                .AsNoTracking()
-                .Where(b => b.OwnerId == ownerId)
-                .AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(queryDto.City))
-            {
-                query = query.Where(b => b.City == queryDto.City);
-            }
-
-            if (!string.IsNullOrWhiteSpace(queryDto.Search))
-            {
-                var search = queryDto.Search.Trim().ToLower();
-                query = query.Where(b =>
-                    b.Title.ToLower().Contains(search) ||
-                    (b.Address != null && b.Address.ToLower().Contains(search)));
-            }
-
-            if (!string.IsNullOrWhiteSpace(queryDto.Category))
-            {
-                query = query.Where(b => b.Category == queryDto.Category);
-            }
-
-            var totalCount = await query.CountAsync();
-
-            var items = await query
-                .OrderBy(b => b.Title)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(b => new BlockPreviewDTO
-                {
-                    Id = b.Id,
-                    Title = b.Title,
-                    Category = b.Category,
-                    City = b.City,
-                    Address = b.Address,
-                    Latitude = b.Latitude,
-                    Longitude = b.Longitude,
-                    IsApproved = b.IsApproved
-                })
-                .ToListAsync();
-
-            var response = new PagedBlocksResponseDTO
-            {
-                Items = items,
-                Page = page,
-                PageSize = pageSize,
-                TotalCount = totalCount
-            };
-
-            return Ok(response);
+            var result = await _mediator.Send(new GetOwnerPointsQuery(queryDto, ownerId, User.IsInRole("Owner")));
+            return result.ToActionResult<PagedBlocksResponseDTO>(this);
         }
     }
 }

@@ -1,6 +1,6 @@
 
 
-using Application.Services;
+using Application.Features;
 using Infrastructure.Data;
 using Infrastructure.Services.Auth;
 using Infrastructure.Services.Email;
@@ -35,6 +35,9 @@ namespace Practice
             {
                 options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
             });
+
+            builder.Services.AddHttpContextAccessor();
+            builder.Services.AddApplicationFeatures();
 
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));

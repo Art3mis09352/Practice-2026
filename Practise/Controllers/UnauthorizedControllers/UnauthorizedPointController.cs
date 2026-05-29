@@ -1,8 +1,9 @@
 ﻿using Application.DTO.Block;
-using Infrastructure.Data;
+using Application.Features.Blocks;
+using Application.Features.Common;
+using Application.Features.Unauthorized;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Practice.Controllers.UnauthorizedControllers
@@ -11,11 +12,11 @@ namespace Practice.Controllers.UnauthorizedControllers
     [ApiController]
     public class UnauthorizedPointController : ControllerBase
     {
-        private readonly AppDbContext _appDbContext;
+        private readonly IMediator _mediator;
 
-        public UnauthorizedPointController(AppDbContext appDbContext)
+        public UnauthorizedPointController(IMediator mediator)
         {
-            _appDbContext = appDbContext;
+            _mediator = mediator;
         }
 
         [HttpGet("{id:int}")]
@@ -27,31 +28,8 @@ namespace Practice.Controllers.UnauthorizedControllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<BlockResponseDTO>> GetPointInfo(int id)
         {
-            var point = await _appDbContext.Blocks
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == id && x.IsApproved);
-
-            if (point == null)
-            {
-                return NotFound();
-            }
-
-            var result = new BlockResponseDTO
-            {
-                Id = point.Id,
-                OwnerId = point.OwnerId,
-                Title = point.Title,
-                Description = point.Description,
-                Category = point.Category,
-                City = point.City,
-                Address = point.Address,
-                Latitude = point.Latitude,
-                Longitude = point.Longitude,
-                AvgPrice = point.AvgPrice,
-                IsApproved = point.IsApproved
-            };
-
-            return Ok(result);
+            var result = await _mediator.Send(new GetPublicPointQuery(id));
+            return result.ToActionResult<BlockResponseDTO>(this);
         }
 
         [HttpGet]
@@ -61,62 +39,8 @@ namespace Practice.Controllers.UnauthorizedControllers
         )]
         public async Task<ActionResult<PagedBlocksResponseDTO>> GetBlocks([FromQuery] GetBlocksQueryDTO queryDto)
         {
-            var page = queryDto.Page < 1 ? 1 : queryDto.Page;
-            var pageSize = queryDto.PageSize < 1 ? 10 : queryDto.PageSize;
-            if (pageSize > 50) pageSize = 50;
-
-            var query = _appDbContext.Blocks
-                .AsNoTracking()
-                .Where(b => b.IsApproved)
-                .AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(queryDto.City))
-            {
-                query = query.Where(b => b.City == queryDto.City);
-            }
-
-            if (!string.IsNullOrWhiteSpace(queryDto.Search))
-            {
-                var search = queryDto.Search.Trim().ToLower();
-                query = query.Where(b =>
-                    b.Title.ToLower().Contains(search) ||
-                    (b.Address != null && b.Address.ToLower().Contains(search)));
-            }
-
-            if (!string.IsNullOrWhiteSpace(queryDto.Category))
-            {
-                query = query.Where(b => b.Category == queryDto.Category);
-            }
-
-            var totalCount = await query.CountAsync();
-
-            var items = await query
-                .OrderBy(b => b.Title)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(b => new BlockPreviewDTO
-                {
-                    Id = b.Id,
-                    Title = b.Title,
-                    Category = b.Category,
-                    City = b.City,
-                    Address = b.Address,
-                    Latitude = b.Latitude,
-                    Longitude = b.Longitude,
-                    IsApproved = b.IsApproved
-                })
-                .ToListAsync();
-
-            var response = new PagedBlocksResponseDTO
-            {
-                Items = items,
-                Page = page,
-                PageSize = pageSize,
-                TotalCount = totalCount
-            };
-
-            return Ok(response);
+            var result = await _mediator.Send(new GetApprovedBlocksQuery(queryDto));
+            return Ok(result);
         }
-
     }
 }
