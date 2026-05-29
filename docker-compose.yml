@@ -1,16 +1,4 @@
 ﻿services:
-  postgres:
-    image: postgres:18
-    container_name: postgres_practice
-    restart: always
-    environment:
-      POSTGRES_PASSWORD: "0000"
-      POSTGRES_USER: postgres02
-      POSTGRES_DB: practice
-    ports:
-      - "5433:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql
   minio:
     image: minio/minio
     container_name: minio_practice
@@ -25,5 +13,4 @@
     volumes:
       - minio_data:/data
 volumes:
-  postgres_data:
   minio_data:
