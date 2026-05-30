@@ -50,6 +50,8 @@
       Storage__PublicPhotosBucket: ${STORAGE_PUBLIC_PHOTOS_BUCKET}
       Storage__PrivateDocumentsBucket: ${STORAGE_PRIVATE_DOCUMENTS_BUCKET}
       Storage__PublicPhotosBaseUrl: ${STORAGE_PUBLIC_PHOTOS_BASE_URL}
+      Storage__PublicEndpoint: ${STORAGE_PUBLIC_ENDPOINT}
+      Storage__PublicUseSsl: ${STORAGE_PUBLIC_USE_SSL}
 
       Jwt__Key: ${JWT_KEY}
       Jwt__Issuer: ${JWT_ISSUER}

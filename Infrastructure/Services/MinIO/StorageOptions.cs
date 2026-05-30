@@ -11,5 +11,7 @@
         public string PrivateDocumentsBucket { get; set; } = string.Empty;
 
         public string PublicPhotosBaseUrl { get; set; } = string.Empty;
+        public string? PublicEndpoint { get; set; }
+        public bool PublicUseSsl { get; set; }
     }
 }

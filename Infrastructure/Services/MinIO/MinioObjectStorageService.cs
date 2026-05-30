@@ -9,11 +9,20 @@ namespace Infrastructure.Services.Storage
     {
         private readonly IMinioClient _minioClient;
         private readonly StorageOptions _options;
+        private readonly IMinioClient _presignClient;
 
         public MinioObjectStorageService(IMinioClient minioClient, IOptions<StorageOptions> options)
         {
             _minioClient = minioClient;
             _options = options.Value;
+            _presignClient = string.IsNullOrWhiteSpace(_options.PublicEndpoint)
+                ? minioClient
+                : new MinioClient()
+                    .WithEndpoint(_options.PublicEndpoint)
+                    .WithCredentials(_options.AccessKey, _options.SecretKey)
+                    .WithSSL(_options.PublicUseSsl)
+                    .WithRegion("us-east-1")
+                    .Build();
         }
 
         public async Task<string> UploadBlockPhotoAsync(Stream stream, string fileName, string contentType, CancellationToken cancellationToken = default)
@@ -77,11 +86,10 @@ namespace Infrastructure.Services.Storage
             await EnsureBucketExistsAsync(_options.PrivateDocumentsBucket, cancellationToken);
 
             var expiresInSeconds = (int)Math.Ceiling(lifetime.TotalSeconds);
-            var url = await _minioClient.PresignedGetObjectAsync(new PresignedGetObjectArgs()
+            var url = await _presignClient.PresignedGetObjectAsync(new PresignedGetObjectArgs()
                 .WithBucket(_options.PrivateDocumentsBucket)
                 .WithObject(objectName)
                 .WithExpiry(expiresInSeconds));
-
             return (url, DateTime.UtcNow.AddSeconds(expiresInSeconds));
         }
 
