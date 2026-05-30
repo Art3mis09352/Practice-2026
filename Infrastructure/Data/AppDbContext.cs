@@ -27,6 +27,7 @@ namespace Infrastructure.Data
         public DbSet<RouteLike> RouteLikes => Set<RouteLike>();
         public DbSet<BlockPhoto> BlockPhotos => Set<BlockPhoto>();
         public DbSet<RouteShareLink> RouteShareLinks => Set<RouteShareLink>();
+        public DbSet<BlockDocument> BlockDocuments => Set<BlockDocument>();
 
 
 
@@ -41,6 +42,7 @@ namespace Infrastructure.Data
             modelBuilder.ApplyConfiguration(new RouteLikeConfiguration());
             modelBuilder.ApplyConfiguration(new BlockPhotoConfiguration());
             modelBuilder.ApplyConfiguration(new RouteShareLinkConfiguration());
+            modelBuilder.ApplyConfiguration(new BlockDocumentConfiguration());
 
             modelBuilder.Entity<User>(entity =>
             {

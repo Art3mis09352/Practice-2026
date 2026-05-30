@@ -57,11 +57,11 @@ namespace Practice.Controllers.UnauthorizedControllers
                 AvgPrice = point.AvgPrice,
                 IsApproved = point.IsApproved,
                 PreviewPhotoId = previewPhoto?.Id,
-                PreviewPhotoUrl = previewPhoto == null ? null : _objectStorageService.GetPublicUrl(previewPhoto.ObjectName),
+                PreviewPhotoUrl = previewPhoto == null ? null : _objectStorageService.GetBlockPhotoPublicUrl(previewPhoto.ObjectName),
                 Photos = orderedPhotos.Select(p => new BlockPhotoDTO
                 {
                     Id = p.Id,
-                    Url = _objectStorageService.GetPublicUrl(p.ObjectName)
+                    Url = _objectStorageService.GetBlockPhotoPublicUrl(p.ObjectName)
                 }).ToList()
             };
 
@@ -122,7 +122,7 @@ namespace Practice.Controllers.UnauthorizedControllers
                     PreviewPhotoUrl = b.Photos
                         .Where(p => b.PreviewPhotoId.HasValue ? p.Id == b.PreviewPhotoId.Value : true)
                         .OrderBy(p => p.Id)
-                        .Select(p => _objectStorageService.GetPublicUrl(p.ObjectName))
+                        .Select(p => _objectStorageService.GetBlockPhotoPublicUrl(p.ObjectName))
                         .FirstOrDefault(),
                     PhotosCount = b.Photos.Count()
                 })

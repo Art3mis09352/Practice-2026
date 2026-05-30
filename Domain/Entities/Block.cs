@@ -31,6 +31,7 @@
         public ICollection<RouteDayBlock> RouteDayBlocks { get; set; } = new List<RouteDayBlock>();
         public ICollection<BlockPhoto> Photos { get; set; } = new List<BlockPhoto>();
         public BlockPhoto? PreviewPhoto { get; set; }
+        public ICollection<BlockDocument> Documents { get; set; } = new List<BlockDocument>();
 
 
     }

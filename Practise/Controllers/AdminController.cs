@@ -1,5 +1,6 @@
 using Application.DTO.Admin;
 using Application.DTO.Block;
+using Application.DTO.Common;
 using Application.DTO.User;
 using Domain.Entities;
 using Infrastructure.Data;
@@ -135,12 +136,12 @@ namespace Practice.Controllers
         )]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult> DeleteBlock(int id)
+        public async Task<ActionResult> DeleteBlock(int id, CancellationToken cancellationToken = default)
         {
             var block = await _dbContext.Blocks
                 .Include(x => x.Photos)
-                .FirstOrDefaultAsync(x => x.Id == id);
-
+                .Include(x => x.Documents)
+                .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
             if (block == null)
             {
                 return NotFound("Точка не найдена.");
@@ -148,9 +149,12 @@ namespace Practice.Controllers
 
             foreach (var photo in block.Photos)
             {
-                await _objectStorageService.DeleteObjectAsync(photo.ObjectName);
+                await _objectStorageService.DeleteBlockPhotoAsync(photo.ObjectName);
             }
-
+            foreach (var document in block.Documents)
+            {
+                await _objectStorageService.DeleteBlockDocumentAsync(document.ObjectName, cancellationToken);
+            }
             _dbContext.Blocks.Remove(block);
             await _dbContext.SaveChangesAsync();
 
@@ -193,6 +197,7 @@ namespace Practice.Controllers
             var block = await _dbContext.Blocks
                 .AsNoTracking()
                 .Include(x => x.Photos)
+                .Include(x => x.Documents)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
             if (block == null)
@@ -220,16 +225,61 @@ namespace Practice.Controllers
                 PreviewPhotoId = previewPhoto?.Id,
                 PreviewPhotoUrl = previewPhoto == null
                     ? null
-                    : _objectStorageService.GetPublicUrl(previewPhoto.ObjectName),
+                    : _objectStorageService.GetBlockPhotoPublicUrl(previewPhoto.ObjectName),
                             Photos = orderedPhotos
                     .Select(p => new BlockPhotoDTO
                     {
                         Id = p.Id,
-                        Url = _objectStorageService.GetPublicUrl(p.ObjectName)
+                        Url = _objectStorageService.GetBlockPhotoPublicUrl(p.ObjectName)
+                    })
+                    .ToList(),
+                Documents = block.Documents
+                    .OrderBy(x => x.Id)
+                    .Select(x => new BlockDocumentDTO
+                    {
+                        Id = x.Id,
+                        OriginalFileName = x.OriginalFileName,
+                        ContentType = x.ContentType,
+                        Size = x.Size,
+                        CreatedAt = x.CreatedAt
                     })
                     .ToList()
             });
         }
+
+        [HttpGet("blocks/{blockId:int}/documents/{documentId:int}/download-url")]
+        [SwaggerOperation(
+            Summary = "Временная ссылка на документ точки",
+            Description = "Админ получает временную ссылку на документ точки."
+        )]
+        [ProducesResponseType(typeof(DownloadUrlResponseDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<DownloadUrlResponseDTO>> GetBlockDocumentDownloadUrl(
+            int blockId,
+            int documentId,
+            CancellationToken cancellationToken)
+        {
+            var document = await _dbContext.BlockDocuments
+                .FirstOrDefaultAsync(x => x.Id == documentId && x.BlockId == blockId, cancellationToken);
+
+            if (document == null)
+            {
+                return NotFound("Документ не найден.");
+            }
+
+            var (url, expiresAtUtc) = await _objectStorageService.GetBlockDocumentDownloadUrlAsync(
+                document.ObjectName,
+                TimeSpan.FromMinutes(10),
+                cancellationToken);
+
+            return Ok(new DownloadUrlResponseDTO
+            {
+                Url = url,
+                ExpiresAtUtc = expiresAtUtc
+            });
+        }
+
+
 
         private async Task<ActionResult> DeleteUserInternalAsync(string id)
         {
@@ -301,7 +351,7 @@ namespace Practice.Controllers
                     PreviewPhotoUrl = b.Photos
                         .Where(p => b.PreviewPhotoId.HasValue ? p.Id == b.PreviewPhotoId.Value : true)
                         .OrderBy(p => p.Id)
-                        .Select(p => _objectStorageService.GetPublicUrl(p.ObjectName))
+                        .Select(p => _objectStorageService.GetBlockPhotoPublicUrl(p.ObjectName))
                         .FirstOrDefault(),
                     PhotosCount = b.Photos.Count()
                 })
@@ -328,6 +378,7 @@ namespace Practice.Controllers
 
             var blocks = await _dbContext.Blocks
                 .Include(x => x.Photos)
+                .Include(x => x.Documents)
                 .Where(x => x.OwnerId == userId)
                 .ToListAsync();
 
@@ -347,7 +398,11 @@ namespace Practice.Controllers
                 {
                     foreach (var photo in block.Photos)
                     {
-                        await _objectStorageService.DeleteObjectAsync(photo.ObjectName);
+                        await _objectStorageService.DeleteBlockPhotoAsync(photo.ObjectName);
+                    }
+                    foreach (var document in block.Documents)
+                    {
+                        await _objectStorageService.DeleteBlockDocumentAsync(document.ObjectName);
                     }
                 }
 

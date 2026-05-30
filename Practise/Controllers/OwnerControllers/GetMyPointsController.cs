@@ -85,7 +85,7 @@ namespace Practice.Controllers.OwnerControllers
                     PreviewPhotoUrl = b.Photos
                         .Where(p => b.PreviewPhotoId.HasValue ? p.Id == b.PreviewPhotoId.Value : true)
                         .OrderBy(p => p.Id)
-                        .Select(p => _storageService.GetPublicUrl(p.ObjectName))
+                        .Select(p => _storageService.GetBlockPhotoPublicUrl(p.ObjectName))
                         .FirstOrDefault(),
                     PhotosCount = b.Photos.Count()
                 })

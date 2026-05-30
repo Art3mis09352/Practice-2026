@@ -1,4 +1,5 @@
 ﻿using Application.DTO.Block;
+using Application.DTO.Common;
 using Domain.Entities;
 using Infrastructure.Data;
 using Infrastructure.Services.MinIO;
@@ -41,6 +42,18 @@ namespace Practice.Controllers.OwnerControllers
             ".webp",
         };
 
+        private static readonly HashSet<string> AllowedDocumentContentTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "application/pdf"
+        };
+
+        private static readonly HashSet<string> AllowedDocumentExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".pdf"
+        };
+
+
+
         [HttpGet("blocks/{id:int}")]
         [SwaggerOperation(
             Summary = "Получение точки владельца",
@@ -60,6 +73,7 @@ namespace Practice.Controllers.OwnerControllers
             var block = await _dbContext.Blocks
                 .AsNoTracking()
                 .Include(b => b.Photos)
+                .Include(b => b.Documents)
                 .FirstOrDefaultAsync(x => x.Id == id && x.OwnerId == ownerId, cancellationToken);
 
             if (block == null)
@@ -144,6 +158,7 @@ namespace Practice.Controllers.OwnerControllers
             
             return Ok(MapBlockResponse(block));
         }
+
         [HttpPost("blocks/{id:int}/photos")]
         [Consumes("multipart/form-data")]
         [SwaggerOperation(
@@ -258,7 +273,7 @@ namespace Practice.Controllers.OwnerControllers
                 return NotFound();
             }
             var wasPreview = photo.Block.PreviewPhotoId == photo.Id;
-            await _objectStorageService.DeleteObjectAsync(photo.ObjectName, cancellationToken);
+            await _objectStorageService.DeleteBlockPhotoAsync(photo.ObjectName, cancellationToken);
 
             photo.Block.IsApproved = false;
             _dbContext.BlockPhotos.Remove(photo);
@@ -293,6 +308,7 @@ namespace Practice.Controllers.OwnerControllers
 
             var block = await _dbContext.Blocks
                 .Include(x => x.Photos)
+                .Include(x => x.Documents)
                 .FirstOrDefaultAsync(x => x.Id == id && x.OwnerId == ownerId, cancellationToken);
 
             if (block == null)
@@ -302,9 +318,12 @@ namespace Practice.Controllers.OwnerControllers
 
             foreach (var photo in block.Photos)
             {
-                await _objectStorageService.DeleteObjectAsync(photo.ObjectName, cancellationToken);
+                await _objectStorageService.DeleteBlockPhotoAsync(photo.ObjectName, cancellationToken);
             }
-
+            foreach (var document in block.Documents)
+            {
+                await _objectStorageService.DeleteBlockDocumentAsync(document.ObjectName, cancellationToken);
+            }
             _dbContext.Blocks.Remove(block);
             await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -352,6 +371,119 @@ namespace Practice.Controllers.OwnerControllers
             return Ok(MapBlockResponse(block));
         }
 
+        [HttpPost("blocks/{blockId:int}/documents")]
+        [Consumes("multipart/form-data")]
+        [SwaggerOperation(
+            Summary = "Загрузка документа точки",
+            Description = "Owner загружает PDF-документ к своей точке."
+        )]
+        [ProducesResponseType(typeof(IReadOnlyCollection<BlockDocumentDTO>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<IReadOnlyCollection<BlockDocumentDTO>>> UploadDocuments(
+            int blockId,
+            [FromForm] List<IFormFile> files,
+            CancellationToken cancellationToken)
+        {
+            var ownerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(ownerId))
+            {
+                return Unauthorized();
+            }
+
+            var block = await _dbContext.Blocks
+                .Include(x => x.Documents)
+                .FirstOrDefaultAsync(x => x.Id == blockId && x.OwnerId == ownerId, cancellationToken);
+
+            if (block == null)
+            {
+                return NotFound();
+            }
+
+            if (files == null || files.Count == 0)
+            {
+                return BadRequest("Нужно передать хотя бы один PDF-файл.");
+            }
+
+            foreach (var file in files)
+            {
+                if (file.Length <= 0)
+                {
+                    return BadRequest("Один из файлов пустой.");
+                }
+
+                if (!AllowedDocumentContentTypes.Contains(file.ContentType) ||
+                    !AllowedDocumentExtensions.Contains(Path.GetExtension(file.FileName)))
+                {
+                    return BadRequest("Разрешены только PDF-документы.");
+                }
+            }
+
+            foreach (var file in files)
+            {
+                await using var stream = file.OpenReadStream();
+
+                var objectName = await _objectStorageService.UploadBlockDocumentAsync(
+                    stream,
+                    file.FileName,
+                    file.ContentType,
+                    cancellationToken);
+
+                block.Documents.Add(new BlockDocument
+                {
+                    ObjectName = objectName,
+                    OriginalFileName = file.FileName,
+                    ContentType = file.ContentType,
+                    Size = file.Length
+                });
+            }
+
+            block.IsApproved = false;
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            return Ok(block.Documents
+                .OrderBy(x => x.Id)
+                .Select(MapDocument)
+                .ToList());
+        }
+
+        [HttpDelete("blocks/{blockId:int}/documents/{documentId:int}")]
+        [SwaggerOperation(
+            Summary = "Удаление документа точки",
+            Description = "Owner удаляет документ своей точки."
+        )]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteDocument(
+            int blockId,
+            int documentId,
+            CancellationToken cancellationToken)
+        {
+            var ownerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(ownerId))
+            {
+                return Unauthorized();
+            }
+
+            var document = await _dbContext.BlockDocuments
+                .Include(x => x.Block)
+                .FirstOrDefaultAsync(x => x.Id == documentId && x.BlockId == blockId, cancellationToken);
+
+            if (document == null || document.Block == null || document.Block.OwnerId != ownerId)
+            {
+                return NotFound();
+            }
+
+            await _objectStorageService.DeleteBlockDocumentAsync(document.ObjectName, cancellationToken);
+
+            document.Block.IsApproved = false;
+            _dbContext.BlockDocuments.Remove(document);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            return NoContent();
+        }
+
+
         private BlockResponseDTO MapBlockResponse(Block block)
         {
             var orderedPhotos = block.Photos
@@ -377,18 +509,72 @@ namespace Practice.Controllers.OwnerControllers
                 PreviewPhotoId = previewPhoto?.Id,
                 PreviewPhotoUrl = previewPhoto == null
                     ? null
-                    : _objectStorageService.GetPublicUrl(previewPhoto.ObjectName),
+                    : _objectStorageService.GetBlockPhotoPublicUrl(previewPhoto.ObjectName),
                 Photos = orderedPhotos
                     .Select(MapPhoto)
+                    .ToList(),
+                Documents = block.Documents
+                    .OrderBy(x => x.Id)
+                    .Select(MapDocument)
                     .ToList()
             };
+        }
+
+        [HttpGet("blocks/{blockId:int}/documents/{documentId:int}/download-url")]
+        [SwaggerOperation(
+            Summary = "Временная ссылка на документ",
+            Description = "Owner получает временную ссылку на свой документ."
+        )]
+        [ProducesResponseType(typeof(DownloadUrlResponseDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<DownloadUrlResponseDTO>> GetDocumentDownloadUrl(
+            int blockId,
+            int documentId,
+            CancellationToken cancellationToken)
+        {
+            var ownerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(ownerId))
+            {
+                return Unauthorized();
+            }
+
+            var document = await _dbContext.BlockDocuments
+                .Include(x => x.Block)
+                .FirstOrDefaultAsync(x => x.Id == documentId && x.BlockId == blockId, cancellationToken);
+
+            if (document == null || document.Block == null || document.Block.OwnerId != ownerId)
+            {
+                return NotFound();
+            }
+
+            var (url, expiresAtUtc) = await _objectStorageService.GetBlockDocumentDownloadUrlAsync(
+                document.ObjectName,
+                TimeSpan.FromMinutes(10),
+                cancellationToken);
+
+            return Ok(new DownloadUrlResponseDTO
+            {
+                Url = url,
+                ExpiresAtUtc = expiresAtUtc
+            });
         }
         private BlockPhotoDTO MapPhoto(BlockPhoto photo)
         {
             return new BlockPhotoDTO
             {
                 Id = photo.Id,
-                Url = _objectStorageService.GetPublicUrl(photo.ObjectName)
+                Url = _objectStorageService.GetBlockPhotoPublicUrl(photo.ObjectName)
+            };
+        }
+        private static BlockDocumentDTO MapDocument(BlockDocument document)
+        {
+            return new BlockDocumentDTO
+            {
+                Id = document.Id,
+                OriginalFileName = document.OriginalFileName,
+                ContentType = document.ContentType,
+                Size = document.Size,
+                CreatedAt = document.CreatedAt
             };
         }
     }

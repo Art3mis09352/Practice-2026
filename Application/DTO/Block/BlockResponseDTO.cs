@@ -27,5 +27,6 @@ namespace Application.DTO.Block
 
         public bool IsApproved { get; set; }
         public IReadOnlyCollection<BlockPhotoDTO> Photos { get; set; } = Array.Empty<BlockPhotoDTO>();
+        public IReadOnlyCollection<BlockDocumentDTO> Documents { get; set; } = Array.Empty<BlockDocumentDTO>();
     }
 }
