@@ -43,12 +43,13 @@
       Cors__AllowedOrigins__2: ${Cors__AllowedOrigins__2}
       Cors__AllowedOrigins__3: ${Cors__AllowedOrigins__3}
 
-      Storage__Endpoint: minio:9000
-      Storage__AccessKey: ${MINIO_ROOT_USER}
-      Storage__SecretKey: ${MINIO_ROOT_PASSWORD}
-      Storage__Bucket: ${MINIO_BUCKET}
-      Storage__UseSsl: "false"
-      Storage__PublicBaseUrl: http://localhost:9000/${MINIO_BUCKET}
+      Storage__Endpoint: ${STORAGE_ENDPOINT}
+      Storage__AccessKey: ${STORAGE_ACCESS_KEY}
+      Storage__SecretKey: ${STORAGE_SECRET_KEY}
+      Storage__UseSsl: ${STORAGE_USE_SSL}
+      Storage__PublicPhotosBucket: ${STORAGE_PUBLIC_PHOTOS_BUCKET}
+      Storage__PrivateDocumentsBucket: ${STORAGE_PRIVATE_DOCUMENTS_BUCKET}
+      Storage__PublicPhotosBaseUrl: ${STORAGE_PUBLIC_PHOTOS_BASE_URL}
 
       Jwt__Key: ${JWT_KEY}
       Jwt__Issuer: ${JWT_ISSUER}
