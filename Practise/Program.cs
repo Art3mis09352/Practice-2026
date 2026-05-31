@@ -122,11 +122,11 @@ namespace Practice
             app.UseSwagger();
             app.UseSwaggerUI();
 
-            
-
-            app.UseHttpsRedirection();
 
             app.UseCors("FrontendCorsPolicy");
+            app.UseHttpsRedirection();
+
+            
 
             
 
