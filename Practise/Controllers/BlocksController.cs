@@ -1,4 +1,5 @@
 ﻿using Application.DTO.Block;
+using Domain.Enums;
 using Infrastructure.Data;
 using Infrastructure.Services.MinIO;
 using Microsoft.AspNetCore.Mvc;
@@ -30,7 +31,7 @@ namespace Practice.Controllers
 
             var query = _dbContext.Blocks
                 .AsNoTracking()
-                .Where(b => b.IsApproved)
+                .Where(b => b.Status == BlockStatus.Approved)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(queryDto.City))
@@ -67,7 +68,7 @@ namespace Practice.Controllers
                     Address = b.Address,
                     Latitude = b.Latitude,
                     Longitude = b.Longitude,
-                    IsApproved = b.IsApproved,
+                    Status = b.Status,
                     PreviewPhotoUrl = b.Photos
                         .Where(p => b.PreviewPhotoId.HasValue ? p.Id == b.PreviewPhotoId.Value : true)
                         .OrderBy(p => p.Id)

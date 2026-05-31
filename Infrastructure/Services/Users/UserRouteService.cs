@@ -2,6 +2,7 @@
 using Application.Data.DTO.Route.Request;
 using Application.DTO.Route.Create;
 using Domain.Entities;
+using Domain.Enums;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -720,7 +721,7 @@ namespace Infrastructure.Services.Users
             }
 
             var approvedIds = await _dbContext.Blocks
-                .Where(x => blockIds.Contains(x.Id) && x.IsApproved)
+                .Where(x => blockIds.Contains(x.Id) && x.Status == BlockStatus.Approved)
                 .Select(x => x.Id)
                 .ToListAsync();
 

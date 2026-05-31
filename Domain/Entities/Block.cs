@@ -1,4 +1,6 @@
-﻿namespace Domain.Entities
+﻿using Domain.Enums;
+
+namespace Domain.Entities
 {
     public class Block
     {
@@ -21,7 +23,7 @@
 
         public decimal? AvgPrice { get; set; }
 
-        public bool IsApproved { get; set; } = false;
+        public BlockStatus Status { get; set; } = BlockStatus.Pending;
         public int? PreviewPhotoId { get; set; }
 
 

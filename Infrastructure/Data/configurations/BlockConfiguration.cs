@@ -41,12 +41,13 @@ namespace Infrastructure.Data.configurations
             builder.Property(x => x.AvgPrice)
                 .HasPrecision(10, 2);
 
-            builder.Property(x => x.IsApproved)
-                .IsRequired();
+            builder.Property(x => x.Status)
+                 .HasConversion<int>()
+                 .IsRequired();
 
             builder.HasIndex(x => x.City);
             builder.HasIndex(x => x.Category);
-            builder.HasIndex(x => x.IsApproved);
+            builder.HasIndex(x => x.Status);
 
             // Navigation Properties
             builder.HasOne(x => x.Owner)

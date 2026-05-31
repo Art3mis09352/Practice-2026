@@ -3,6 +3,7 @@ using Application.DTO.Block;
 using Application.DTO.Common;
 using Application.DTO.User;
 using Domain.Entities;
+using Domain.Enums;
 using Infrastructure.Data;
 using Infrastructure.Services.MinIO;
 using Microsoft.AspNetCore.Authorization;
@@ -176,9 +177,9 @@ namespace Practice.Controllers
                 return NotFound("Точка не найдена.");
             }
 
-            if (!block.IsApproved)
+            if (block.Status != BlockStatus.Approved)
             {
-                block.IsApproved = true;
+                block.Status = BlockStatus.Approved;
                 await _dbContext.SaveChangesAsync();
             }
 
@@ -221,7 +222,7 @@ namespace Practice.Controllers
                 Latitude = block.Latitude,
                 Longitude = block.Longitude,
                 AvgPrice = block.AvgPrice,
-                IsApproved = block.IsApproved,
+                Status = block.Status,
                 PreviewPhotoId = previewPhoto?.Id,
                 PreviewPhotoUrl = previewPhoto == null
                     ? null
@@ -318,7 +319,7 @@ namespace Practice.Controllers
 
             if (pendingOnly)
             {
-                query = query.Where(b => !b.IsApproved);
+                query = query.Where(b => b.Status == BlockStatus.Pending);
             }
 
             if (!string.IsNullOrWhiteSpace(dto.Search))
@@ -332,7 +333,7 @@ namespace Practice.Controllers
             var totalCount = await query.CountAsync();
 
             var items = await query
-                .OrderBy(b => b.IsApproved)
+                .OrderBy(b => b.Status)
                 .ThenBy(b => b.Title)
                 .ThenBy(b => b.Id)
                 .Skip((page - 1) * pageSize)
@@ -347,7 +348,7 @@ namespace Practice.Controllers
                     Address = b.Address,
                     Latitude = b.Latitude,
                     Longitude = b.Longitude,
-                    IsApproved = b.IsApproved,
+                    Status = b.Status,
                     PreviewPhotoUrl = b.Photos
                         .Where(p => b.PreviewPhotoId.HasValue ? p.Id == b.PreviewPhotoId.Value : true)
                         .OrderBy(p => p.Id)

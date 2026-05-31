@@ -1,6 +1,7 @@
 ﻿using Application.DTO.Block;
 using Application.DTO.Common;
 using Domain.Entities;
+using Domain.Enums;
 using Infrastructure.Data;
 using Infrastructure.Services.MinIO;
 using Microsoft.AspNetCore.Authorization;
@@ -111,7 +112,7 @@ namespace Practice.Controllers.OwnerControllers
                 Latitude = dto.Latitude,
                 Longitude = dto.Longitude,
                 AvgPrice = dto.AvgPrice,
-                IsApproved = false
+                Status = BlockStatus.Pending
             };
 
             _dbContext.Blocks.Add(block);
@@ -151,7 +152,7 @@ namespace Practice.Controllers.OwnerControllers
             block.Longitude = dto.Longitude ?? block.Longitude;
             block.AvgPrice = dto.AvgPrice ?? block.AvgPrice;
 
-            block.IsApproved = false;
+            block.Status = BlockStatus.Pending;
             
             await _dbContext.SaveChangesAsync();
 
@@ -225,7 +226,7 @@ namespace Practice.Controllers.OwnerControllers
                 });
             }
 
-            block.IsApproved = false;
+            block.Status = BlockStatus.Pending;
             await _dbContext.SaveChangesAsync(cancellationToken);
 
             if (block.PreviewPhotoId == null)
@@ -275,7 +276,7 @@ namespace Practice.Controllers.OwnerControllers
             var wasPreview = photo.Block.PreviewPhotoId == photo.Id;
             await _objectStorageService.DeleteBlockPhotoAsync(photo.ObjectName, cancellationToken);
 
-            photo.Block.IsApproved = false;
+            photo.Block.Status = BlockStatus.Pending;
             _dbContext.BlockPhotos.Remove(photo);
             if (wasPreview)
             {
@@ -364,7 +365,7 @@ namespace Practice.Controllers.OwnerControllers
             }
 
             block.PreviewPhotoId = photoId;
-            block.IsApproved = false;
+            block.Status = BlockStatus.Pending;
 
             await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -438,7 +439,7 @@ namespace Practice.Controllers.OwnerControllers
                 });
             }
 
-            block.IsApproved = false;
+            block.Status = BlockStatus.Pending;
             await _dbContext.SaveChangesAsync(cancellationToken);
 
             return Ok(block.Documents
@@ -476,7 +477,7 @@ namespace Practice.Controllers.OwnerControllers
 
             await _objectStorageService.DeleteBlockDocumentAsync(document.ObjectName, cancellationToken);
 
-            document.Block.IsApproved = false;
+            document.Block.Status = BlockStatus.Pending;
             _dbContext.BlockDocuments.Remove(document);
             await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -505,7 +506,7 @@ namespace Practice.Controllers.OwnerControllers
                 Latitude = block.Latitude,
                 Longitude = block.Longitude,
                 AvgPrice = block.AvgPrice,
-                IsApproved = block.IsApproved,
+                Status = block.Status,
                 PreviewPhotoId = previewPhoto?.Id,
                 PreviewPhotoUrl = previewPhoto == null
                     ? null

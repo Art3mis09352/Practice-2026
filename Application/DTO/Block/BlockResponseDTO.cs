@@ -1,4 +1,6 @@
 ﻿// Data/DTO/Block/BlockResponseDTO.cs
+using Domain.Enums;
+
 namespace Application.DTO.Block
 {
     public class BlockResponseDTO
@@ -25,7 +27,7 @@ namespace Application.DTO.Block
         public int? PreviewPhotoId { get; set; }
         public string? PreviewPhotoUrl { get; set; }
 
-        public bool IsApproved { get; set; }
+        public BlockStatus Status { get; set; }
         public IReadOnlyCollection<BlockPhotoDTO> Photos { get; set; } = Array.Empty<BlockPhotoDTO>();
         public IReadOnlyCollection<BlockDocumentDTO> Documents { get; set; } = Array.Empty<BlockDocumentDTO>();
     }

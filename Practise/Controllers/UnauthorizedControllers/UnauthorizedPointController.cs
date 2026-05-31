@@ -1,4 +1,5 @@
 ﻿using Application.DTO.Block;
+using Domain.Enums;
 using Infrastructure.Data;
 using Infrastructure.Services.MinIO;
 using Microsoft.AspNetCore.Mvc;
@@ -33,7 +34,7 @@ namespace Practice.Controllers.UnauthorizedControllers
             var point = await _appDbContext.Blocks
                 .AsNoTracking()
                 .Include(b => b.Photos)
-                .FirstOrDefaultAsync(x => x.Id == id && x.IsApproved);
+                .FirstOrDefaultAsync(x => x.Id == id && x.Status == BlockStatus.Approved);
 
             if (point == null)
             {
@@ -55,7 +56,7 @@ namespace Practice.Controllers.UnauthorizedControllers
                 Latitude = point.Latitude,
                 Longitude = point.Longitude,
                 AvgPrice = point.AvgPrice,
-                IsApproved = point.IsApproved,
+                Status = point.Status,
                 PreviewPhotoId = previewPhoto?.Id,
                 PreviewPhotoUrl = previewPhoto == null ? null : _objectStorageService.GetBlockPhotoPublicUrl(previewPhoto.ObjectName),
                 Photos = orderedPhotos.Select(p => new BlockPhotoDTO
@@ -81,7 +82,7 @@ namespace Practice.Controllers.UnauthorizedControllers
 
             var query = _appDbContext.Blocks
                 .AsNoTracking()
-                .Where(b => b.IsApproved)
+                .Where(b => b.Status == BlockStatus.Approved)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(queryDto.City))
@@ -118,7 +119,7 @@ namespace Practice.Controllers.UnauthorizedControllers
                     Address = b.Address,
                     Latitude = b.Latitude,
                     Longitude = b.Longitude,
-                    IsApproved = b.IsApproved,
+                    Status = b.Status,
                     PreviewPhotoUrl = b.Photos
                         .Where(p => b.PreviewPhotoId.HasValue ? p.Id == b.PreviewPhotoId.Value : true)
                         .OrderBy(p => p.Id)
