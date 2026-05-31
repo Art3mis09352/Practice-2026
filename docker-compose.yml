@@ -141,7 +141,7 @@
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
     ports:
-      - "3000:3000"
+      - "3010:3000"
 volumes:
   postgres_data:
   minio_data:
