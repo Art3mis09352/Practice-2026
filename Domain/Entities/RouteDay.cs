@@ -15,5 +15,6 @@
         // Navigation Properties
         public Route? Route { get; set; }
         public ICollection<RouteDayBlock> RouteDayBlocks { get; set; } = new List<RouteDayBlock>();
+        public ICollection<RouteDayCustomPoint> RouteDayCustomPoints { get; set; } = new List<RouteDayCustomPoint>();
     }
 }

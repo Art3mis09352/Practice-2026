@@ -82,6 +82,7 @@ namespace Practice.Controllers.OwnerControllers
                     Latitude = b.Latitude,
                     Longitude = b.Longitude,
                     Status = b.Status,
+                    ModerationComment = b.ModerationComment,
                     PreviewPhotoUrl = b.Photos
                         .Where(p => b.PreviewPhotoId.HasValue ? p.Id == b.PreviewPhotoId.Value : true)
                         .OrderBy(p => p.Id)
