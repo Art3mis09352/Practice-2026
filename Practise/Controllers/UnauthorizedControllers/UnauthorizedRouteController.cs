@@ -37,6 +37,8 @@ namespace Practice.Controllers.UnauthorizedControllers
                 .Include(x => x.Days.OrderBy(d => d.DayNumber))
                     .ThenInclude(x => x.RouteDayBlocks.OrderBy(rdb => rdb.OrderInDay))
                         .ThenInclude(x => x.Block)
+                .Include(x => x.Days.OrderBy(d => d.DayNumber))
+                    .ThenInclude(x => x.RouteDayCustomPoints.OrderBy(cp => cp.OrderInDay))
                 .FirstOrDefaultAsync();
 
             if (route == null)
@@ -67,6 +69,8 @@ namespace Practice.Controllers.UnauthorizedControllers
                 .Include(x => x.Days)
                     .ThenInclude(x => x.RouteDayBlocks)
                         .ThenInclude(x => x.Block)
+                .Include(x => x.Days.OrderBy(d => d.DayNumber))
+                    .ThenInclude(x => x.RouteDayCustomPoints.OrderBy(cp => cp.OrderInDay))
                 .AsQueryable();
 
             if (queryDto.StartDateFrom.HasValue)
@@ -119,7 +123,7 @@ namespace Practice.Controllers.UnauthorizedControllers
                     StartDate = route.StartDate,
                     EndDate = route.EndDate,
                     DaysCount = route.Days.Count,
-                    PointsCount = route.Days.SelectMany(d => d.RouteDayBlocks).Count(),
+                    PointsCount = route.Days.Sum(d => d.RouteDayBlocks.Count + d.RouteDayCustomPoints.Count),
                     FirstCity = route.Days
                         .SelectMany(d => d.RouteDayBlocks)
                         .Where(rdb => rdb.Block != null)
@@ -162,6 +166,8 @@ namespace Practice.Controllers.UnauthorizedControllers
                 .Include(x => x.Days.OrderBy(d => d.DayNumber))
                     .ThenInclude(x => x.RouteDayBlocks.OrderBy(rdb => rdb.OrderInDay))
                         .ThenInclude(x => x.Block)
+                .Include(x => x.Days.OrderBy(d => d.DayNumber))
+                    .ThenInclude(x => x.RouteDayCustomPoints.OrderBy(cp => cp.OrderInDay))
                 .FirstOrDefaultAsync(x =>
                     x.ShareLinks.Any(sl =>
                         sl.Token == token &&
@@ -193,20 +199,16 @@ namespace Practice.Controllers.UnauthorizedControllers
                 IsLikedByCurrentUser = false,
                 Budget = route.Budget,
                 Days = route.Days
-                    .OrderBy(d => d.DayNumber)
-                    .Select(day => new RouteDayInfoDTO
+                    .OrderBy(day => day.DayNumber)
+                    .Select(day =>
                     {
-                        Id = day.Id,
-                        DayNumber = day.DayNumber,
-                        Title = day.Title,
-                        Notes = day.Notes,
-                        Blocks = day.RouteDayBlocks
-                            .OrderBy(rdb => rdb.OrderInDay)
+                        var catalogPoints = day.RouteDayBlocks
                             .Where(rdb => rdb.Block != null)
                             .Select(rdb => new RouteDayBlockInfoDTO
                             {
                                 Id = rdb.Id,
                                 BlockId = rdb.BlockId,
+                                IsCustom = false,
                                 OrderInDay = rdb.OrderInDay,
                                 Notes = rdb.Notes,
                                 Title = rdb.Block!.Title,
@@ -217,8 +219,38 @@ namespace Practice.Controllers.UnauthorizedControllers
                                 Latitude = rdb.Block.Latitude,
                                 Longitude = rdb.Block.Longitude,
                                 AvgPrice = rdb.Block.AvgPrice
-                            })
-                            .ToList()
+                            });
+
+                        var customPoints = day.RouteDayCustomPoints
+                            .Select(cp => new RouteDayBlockInfoDTO
+                            {
+                                Id = cp.Id,
+                                BlockId = null,
+                                IsCustom = true,
+                                OrderInDay = cp.OrderInDay,
+                                Notes = cp.Notes,
+                                Title = cp.Title,
+                                Description = null,
+                                Category = cp.Category,
+                                City = cp.City,
+                                Address = cp.Address,
+                                Latitude = cp.Latitude,
+                                Longitude = cp.Longitude,
+                                AvgPrice = null
+                            });
+
+                            return new RouteDayInfoDTO
+                            {
+                                Id = day.Id,
+                                DayNumber = day.DayNumber,
+                                Title = day.Title,
+                                Notes = day.Notes,
+                                Blocks = catalogPoints
+                                    .Concat(customPoints)
+                                    .OrderBy(x => x.OrderInDay)
+                                    .ThenBy(x => x.IsCustom)
+                                    .ToList()
+                            };
                     })
                     .ToList()
             };

@@ -1,6 +1,7 @@
 ﻿using Application.Data.DTO.Route.Read;
 using Application.Data.DTO.Route.Request;
 using Application.DTO.Route.Create;
+using Application.DTO.Route.Request;
 using Application.Services;
 using Infrastructure.Services.Users;
 using Microsoft.AspNetCore.Authorization;
@@ -472,6 +473,119 @@ namespace Practice.Controllers.UserControllers
             }
 
             return Ok(result);
+        }
+
+
+        [HttpPost("{routeId:int}/days/{dayId:int}/custom-points")]
+        [SwaggerOperation(
+            Summary = "Добавить кастомную точку в день маршрута",
+            Description = "Добавляет пользовательскую точку в день маршрута."
+        )]
+        [ProducesResponseType(typeof(RouteResponseDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<RouteResponseDTO>> AddCustomPoint(
+            int routeId,
+            int dayId,
+            [FromBody] AddRouteDayCustomPointDTO dto)
+        {
+            var userId = GetUserId();
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            try
+            {
+                var result = await _userRouteService.AddCustomPointAsync(userId, routeId, dayId, dto);
+                if (result == null)
+                {
+                    return NotFound("Маршрут или день не найдены.");
+                }
+
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPatch("{routeId:int}/days/{dayId:int}/custom-points/{customPointId:int}")]
+        [SwaggerOperation(
+            Summary = "Изменить кастомную точку в дне маршрута",
+            Description = "Обновляет пользовательскую точку в дне маршрута."
+        )]
+        [ProducesResponseType(typeof(RouteResponseDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<RouteResponseDTO>> UpdateCustomPoint(
+            int routeId,
+            int dayId,
+            int customPointId,
+            [FromBody] UpdateRouteDayCustomPointDTO dto)
+        {
+            var userId = GetUserId();
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            try
+            {
+                var result = await _userRouteService.UpdateCustomPointAsync(
+                    userId,
+                    routeId,
+                    dayId,
+                    customPointId,
+                    dto);
+
+                if (result == null)
+                {
+                    return NotFound("Маршрут, день или кастомная точка не найдены.");
+                }
+
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpDelete("{routeId:int}/days/{dayId:int}/custom-points/{customPointId:int}")]
+        [SwaggerOperation(
+            Summary = "Удалить кастомную точку из дня маршрута",
+            Description = "Удаляет пользовательскую точку из дня маршрута."
+        )]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteCustomPoint(
+            int routeId,
+            int dayId,
+            int customPointId)
+        {
+            var userId = GetUserId();
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            var deleted = await _userRouteService.DeleteCustomPointAsync(
+                userId,
+                routeId,
+                dayId,
+                customPointId);
+
+            if (!deleted)
+            {
+                return NotFound("Маршрут, день или кастомная точка не найдены.");
+            }
+
+            return NoContent();
         }
     }
 }

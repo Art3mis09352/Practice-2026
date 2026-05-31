@@ -1,11 +1,14 @@
 ﻿using Application.Data.DTO.Route.Read;
 using Application.Data.DTO.Route.Request;
 using Application.DTO.Route.Create;
+using Application.DTO.Route.Request;
 using Domain.Entities;
 using Domain.Enums;
 using Infrastructure.Data;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Practice.Migrations;
 using Route = Domain.Entities.Route;
 
 namespace Infrastructure.Services.Users
@@ -213,6 +216,8 @@ namespace Infrastructure.Services.Users
                 .Include(x => x.Days)
                     .ThenInclude(x => x.RouteDayBlocks)
                         .ThenInclude(x => x.Block)
+                .Include(x => x.Days)
+                    .ThenInclude(x => x.RouteDayCustomPoints)
                 .AsQueryable();
 
             if (dto.StartDateFrom.HasValue)
@@ -255,7 +260,7 @@ namespace Infrastructure.Services.Users
                     StartDate = route.StartDate,
                     EndDate = route.EndDate,
                     DaysCount = route.Days.Count,
-                    PointsCount = route.Days.SelectMany(d => d.RouteDayBlocks).Count(),
+                    PointsCount = route.Days.Sum(d => d.RouteDayBlocks.Count + d.RouteDayCustomPoints.Count),
                     Budget = route.Budget,
                     FirstCity = route.Days
                         .SelectMany(d => d.RouteDayBlocks)
@@ -468,6 +473,7 @@ namespace Infrastructure.Services.Users
             var day = await _dbContext.RouteDays
                 .Include(x => x.Route)
                 .Include(x => x.RouteDayBlocks)
+                .Include(x => x.RouteDayCustomPoints)
                 .FirstOrDefaultAsync(x => x.Id == dayId && x.RouteId == routeId && x.Route != null && x.Route.UserId == userId);
 
             if (day == null)
@@ -482,8 +488,8 @@ namespace Infrastructure.Services.Users
                 throw new InvalidOperationException("OrderInDay должен быть больше нуля.");
             }
 
-            var maxAllowedOrder = day.RouteDayBlocks.Count + 1;
-            if (dto.OrderInDay > maxAllowedOrder)
+            var totalInDay = day.RouteDayBlocks.Count + day.RouteDayCustomPoints.Count;
+            if (dto.OrderInDay > totalInDay + 1)
             {
                 throw new InvalidOperationException("OrderInDay выходит за допустимый диапазон.");
             }
@@ -491,6 +497,11 @@ namespace Infrastructure.Services.Users
             foreach (var block in day.RouteDayBlocks.Where(x => x.OrderInDay >= dto.OrderInDay))
             {
                 block.OrderInDay++;
+            }
+
+            foreach (var point in day.RouteDayCustomPoints.Where(x => x.OrderInDay >= dto.OrderInDay))
+            {
+                point.OrderInDay++;
             }
 
             day.RouteDayBlocks.Add(new RouteDayBlock
@@ -510,6 +521,7 @@ namespace Infrastructure.Services.Users
             var day = await _dbContext.RouteDays
                 .Include(x => x.Route)
                 .Include(x => x.RouteDayBlocks)
+                .Include(x => x.RouteDayCustomPoints)
                 .FirstOrDefaultAsync(x => x.Id == dayId && x.RouteId == routeId && x.Route != null && x.Route.UserId == userId);
 
             if (day == null)
@@ -537,13 +549,44 @@ namespace Infrastructure.Services.Users
             if (dto.OrderInDay.HasValue && dto.OrderInDay.Value != routeDayBlock.OrderInDay)
             {
                 var newOrder = dto.OrderInDay.Value;
+                var oldOrder = routeDayBlock.OrderInDay;
+                var totalInDay = day.RouteDayBlocks.Count + day.RouteDayCustomPoints.Count;
 
-                if (newOrder < 1 || newOrder > day.RouteDayBlocks.Count)
+                if (newOrder < 1 || newOrder > totalInDay)
                 {
                     throw new InvalidOperationException("OrderInDay выходит за допустимый диапазон.");
                 }
 
-                ReorderBlocks(day.RouteDayBlocks.ToList(), routeDayBlock, newOrder);
+                if (newOrder < oldOrder)
+                {
+                    foreach (var block in day.RouteDayBlocks
+                                 .Where(x => x.Id != routeDayBlock.Id && x.OrderInDay >= newOrder && x.OrderInDay < oldOrder))
+                    {
+                        block.OrderInDay++;
+                    }
+
+                    foreach (var point in day.RouteDayCustomPoints
+                                 .Where(x => x.OrderInDay >= newOrder && x.OrderInDay < oldOrder))
+                    {
+                        point.OrderInDay++;
+                    }
+                }
+                else
+                {
+                    foreach (var block in day.RouteDayBlocks
+                                 .Where(x => x.Id != routeDayBlock.Id && x.OrderInDay <= newOrder && x.OrderInDay > oldOrder))
+                    {
+                        block.OrderInDay--;
+                    }
+
+                    foreach (var point in day.RouteDayCustomPoints
+                                 .Where(x => x.OrderInDay <= newOrder && x.OrderInDay > oldOrder))
+                    {
+                        point.OrderInDay--;
+                    }
+                }
+
+                routeDayBlock.OrderInDay = newOrder;
             }
 
             await _dbContext.SaveChangesAsync();
@@ -556,6 +599,7 @@ namespace Infrastructure.Services.Users
             var day = await _dbContext.RouteDays
                 .Include(x => x.Route)
                 .Include(x => x.RouteDayBlocks)
+                .Include(x => x.RouteDayCustomPoints)
                 .FirstOrDefaultAsync(x => x.Id == dayId && x.RouteId == routeId && x.Route != null && x.Route.UserId == userId);
 
             if (day == null)
@@ -578,6 +622,11 @@ namespace Infrastructure.Services.Users
                 block.OrderInDay--;
             }
 
+            foreach (var point in day.RouteDayCustomPoints.Where(x => x.OrderInDay > deletedOrder))
+            {
+                point.OrderInDay--;
+            }
+
             await _dbContext.SaveChangesAsync();
             return true;
         }
@@ -592,11 +641,15 @@ namespace Infrastructure.Services.Users
                 .Include(x => x.Days.OrderBy(d => d.DayNumber))
                     .ThenInclude(x => x.RouteDayBlocks.OrderBy(rdb => rdb.OrderInDay))
                         .ThenInclude(x => x.Block)
+                .Include(x => x.Days.OrderBy(d => d.DayNumber))
+                    .ThenInclude(x => x.RouteDayCustomPoints.OrderBy(cp => cp.OrderInDay))
                 .FirstOrDefaultAsync();
         }
 
         private static RouteResponseDTO MapRouteResponse(Route route, string userId)
         {
+
+
             return new RouteResponseDTO
             {
                 Id = route.Id,
@@ -612,35 +665,61 @@ namespace Infrastructure.Services.Users
                 LikesCount = route.LikesCount,
                 IsLikedByCurrentUser = route.Likes.Any(like => like.UserId == userId),
                 Days = route.Days
-                    .OrderBy(d => d.DayNumber)
-                    .Select(day => new RouteDayInfoDTO
-                    {
-                        Id = day.Id,
-                        DayNumber = day.DayNumber,
-                        Title = day.Title,
-                        Notes = day.Notes,
-                        Blocks = day.RouteDayBlocks
-                            .OrderBy(rdb => rdb.OrderInDay)
-                            .Where(rdb => rdb.Block != null)
-                            .Select(rdb => new RouteDayBlockInfoDTO
-                            {
-                                Id = rdb.Id,
-                                BlockId = rdb.BlockId,
-                                OrderInDay = rdb.OrderInDay,
-                                Notes = rdb.Notes,
-                                Title = rdb.Block!.Title,
-                                Description = rdb.Block.Description,
-                                Category = rdb.Block.Category,
-                                City = rdb.Block.City,
-                                Address = rdb.Block.Address,
-                                Latitude = rdb.Block.Latitude,
-                                Longitude = rdb.Block.Longitude,
-                                AvgPrice = rdb.Block.AvgPrice
-                            })
-                            .ToList()
-                    })
-                    .ToList(),
-                
+                .OrderBy(day => day.DayNumber)
+                .Select(day =>
+                {
+                    var catalogPoints = day.RouteDayBlocks
+                        .Where(rdb => rdb.Block != null)
+                        .Select(rdb => new RouteDayBlockInfoDTO
+                        {
+                            Id = rdb.Id,
+                            BlockId = rdb.BlockId,
+                            IsCustom = false,
+                            OrderInDay = rdb.OrderInDay,
+                            Notes = rdb.Notes,
+                            Title = rdb.Block!.Title,
+                            Description = rdb.Block.Description,
+                            Category = rdb.Block.Category,
+                            City = rdb.Block.City,
+                            Address = rdb.Block.Address,
+                            Latitude = rdb.Block.Latitude,
+                            Longitude = rdb.Block.Longitude,
+                            AvgPrice = rdb.Block.AvgPrice
+                        });
+
+                    var customPoints = day.RouteDayCustomPoints
+                        .Select(cp => new RouteDayBlockInfoDTO
+                        {
+                            Id = cp.Id,
+                            BlockId = null,
+                            IsCustom = true,
+                            OrderInDay = cp.OrderInDay,
+                            Notes = cp.Notes,
+                            Title = cp.Title,
+                            Description = null,
+                            Category = cp.Category,
+                            City = cp.City,
+                            Address = cp.Address,
+                            Latitude = cp.Latitude,
+                            Longitude = cp.Longitude,
+                            AvgPrice = null
+                        });
+
+            return new RouteDayInfoDTO
+                {
+                    Id = day.Id,
+                    DayNumber = day.DayNumber,
+                    Title = day.Title,
+                    Notes = day.Notes,
+                    Blocks = catalogPoints
+                        .Concat(customPoints)
+                        .OrderBy(x => x.OrderInDay)
+                        .ThenBy(x => x.IsCustom)
+                        .ToList()
+                };
+            })
+            .ToList()
+
             };
         }
 
@@ -861,7 +940,7 @@ namespace Infrastructure.Services.Users
                     EndDate = r.EndDate,
                     Budget = r.Budget,
                     DaysCount = r.Days.Count,
-                    PointsCount = r.Days.SelectMany(d => d.RouteDayBlocks).Count(),
+                    PointsCount = r.Days.Sum(d => d.RouteDayBlocks.Count + d.RouteDayCustomPoints.Count),
                     FirstCity = r.Days
                         .SelectMany(d => d.RouteDayBlocks)
                         .Where(rdb => rdb.Block != null)
@@ -934,7 +1013,260 @@ namespace Infrastructure.Services.Users
             return Guid.NewGuid().ToString("N");
         }
 
-        
+        public async Task<RouteResponseDTO?> AddCustomPointAsync(
+            string userId,
+            int routeId,
+            int dayId,
+            AddRouteDayCustomPointDTO dto)
+        {
+            var day = await _dbContext.RouteDays
+                .Include(x => x.Route)
+                .Include(x => x.RouteDayBlocks)
+                .Include(x => x.RouteDayCustomPoints)
+                .FirstOrDefaultAsync(x =>
+                    x.Id == dayId &&
+                    x.RouteId == routeId &&
+                    x.Route != null &&
+                    x.Route.UserId == userId);
+
+            if (day == null)
+            {
+                return null;
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Title))
+            {
+                throw new InvalidOperationException("Название точки обязательно.");
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.City))
+            {
+                throw new InvalidOperationException("Город обязателен.");
+            }
+
+            if (dto.Latitude < -90 || dto.Latitude > 90 || dto.Longitude < -180 || dto.Longitude > 180)
+            {
+                throw new InvalidOperationException("Некорректные координаты.");
+            }
+
+            if (dto.OrderInDay < 1)
+            {
+                throw new InvalidOperationException("OrderInDay должен быть больше нуля.");
+            }
+
+            var totalInDay = day.RouteDayBlocks.Count + day.RouteDayCustomPoints.Count;
+            if (dto.OrderInDay > totalInDay + 1)
+            {
+                throw new InvalidOperationException("OrderInDay выходит за допустимый диапазон.");
+            }
+
+            foreach (var block in day.RouteDayBlocks.Where(x => x.OrderInDay >= dto.OrderInDay))
+            {
+                block.OrderInDay++;
+            }
+
+            foreach (var customPoint in day.RouteDayCustomPoints.Where(x => x.OrderInDay >= dto.OrderInDay))
+            {
+                customPoint.OrderInDay++;
+            }
+
+            day.RouteDayCustomPoints.Add(new RouteDayCustomPoint
+            {
+                Title = dto.Title.Trim(),
+                City = dto.City.Trim(),
+                Category = string.IsNullOrWhiteSpace(dto.Category) ? null : dto.Category.Trim(),
+                Address = string.IsNullOrWhiteSpace(dto.Address) ? null : dto.Address.Trim(),
+                Latitude = dto.Latitude,
+                Longitude = dto.Longitude,
+                OrderInDay = dto.OrderInDay,
+                Notes = dto.Notes
+            });
+
+            await _dbContext.SaveChangesAsync();
+
+            return await GetMyRouteAsync(userId, routeId);
+        }
+
+        public async Task<RouteResponseDTO?> UpdateCustomPointAsync(
+            string userId,
+            int routeId,
+            int dayId,
+            int customPointId,
+            UpdateRouteDayCustomPointDTO dto)
+        {
+            var day = await _dbContext.RouteDays
+                .Include(x => x.Route)
+                .Include(x => x.RouteDayBlocks)
+                .Include(x => x.RouteDayCustomPoints)
+                .FirstOrDefaultAsync(x =>
+                    x.Id == dayId &&
+                    x.RouteId == routeId &&
+                    x.Route != null &&
+                    x.Route.UserId == userId);
+
+            if (day == null)
+            {
+                return null;
+            }
+
+            var customPoint = day.RouteDayCustomPoints.FirstOrDefault(x => x.Id == customPointId);
+            if (customPoint == null)
+            {
+                return null;
+            }
+
+            if (dto.Title != null)
+            {
+                if (string.IsNullOrWhiteSpace(dto.Title))
+                {
+                    throw new InvalidOperationException("Название точки не может быть пустым.");
+                }
+
+                customPoint.Title = dto.Title.Trim();
+            }
+
+            if (dto.City != null)
+            {
+                if (string.IsNullOrWhiteSpace(dto.City))
+                {
+                    throw new InvalidOperationException("Город не может быть пустым.");
+                }
+
+                customPoint.City = dto.City.Trim();
+            }
+
+            if (dto.Category != null)
+            {
+                customPoint.Category = string.IsNullOrWhiteSpace(dto.Category)
+                    ? null
+                    : dto.Category.Trim();
+            }
+
+            if (dto.Address != null)
+            {
+                customPoint.Address = string.IsNullOrWhiteSpace(dto.Address)
+                    ? null
+                    : dto.Address.Trim();
+            }
+
+            if (dto.Notes != null)
+            {
+                customPoint.Notes = dto.Notes;
+            }
+
+            if (dto.Latitude.HasValue)
+            {
+                if (dto.Latitude.Value < -90 || dto.Latitude.Value > 90)
+                {
+                    throw new InvalidOperationException("Некорректная широта.");
+                }
+
+                customPoint.Latitude = dto.Latitude.Value;
+            }
+
+            if (dto.Longitude.HasValue)
+            {
+                if (dto.Longitude.Value < -180 || dto.Longitude.Value > 180)
+                {
+                    throw new InvalidOperationException("Некорректная долгота.");
+                }
+
+                customPoint.Longitude = dto.Longitude.Value;
+            }
+
+            if (dto.OrderInDay.HasValue && dto.OrderInDay.Value != customPoint.OrderInDay)
+            {
+                var newOrder = dto.OrderInDay.Value;
+                var oldOrder = customPoint.OrderInDay;
+                var totalInDay = day.RouteDayBlocks.Count + day.RouteDayCustomPoints.Count;
+
+                if (newOrder < 1 || newOrder > totalInDay)
+                {
+                    throw new InvalidOperationException("OrderInDay выходит за допустимый диапазон.");
+                }
+
+                if (newOrder < oldOrder)
+                {
+                    foreach (var block in day.RouteDayBlocks
+                                 .Where(x => x.OrderInDay >= newOrder && x.OrderInDay < oldOrder))
+                    {
+                        block.OrderInDay++;
+                    }
+
+                    foreach (var point in day.RouteDayCustomPoints
+                                 .Where(x => x.Id != customPointId && x.OrderInDay >= newOrder && x.OrderInDay < oldOrder))
+                    {
+                        point.OrderInDay++;
+                    }
+                }
+                else
+                {
+                    foreach (var block in day.RouteDayBlocks
+                                 .Where(x => x.OrderInDay <= newOrder && x.OrderInDay > oldOrder))
+                    {
+                        block.OrderInDay--;
+                    }
+
+                    foreach (var point in day.RouteDayCustomPoints
+                                 .Where(x => x.Id != customPointId && x.OrderInDay <= newOrder && x.OrderInDay > oldOrder))
+                    {
+                        point.OrderInDay--;
+                    }
+                }
+
+                customPoint.OrderInDay = newOrder;
+            }
+
+            await _dbContext.SaveChangesAsync();
+
+            return await GetMyRouteAsync(userId, routeId);
+        }
+
+        public async Task<bool> DeleteCustomPointAsync(
+            string userId,
+            int routeId,
+            int dayId,
+            int customPointId)
+        {
+            var day = await _dbContext.RouteDays
+                .Include(x => x.Route)
+                .Include(x => x.RouteDayBlocks)
+                .Include(x => x.RouteDayCustomPoints)
+                .FirstOrDefaultAsync(x =>
+                    x.Id == dayId &&
+                    x.RouteId == routeId &&
+                    x.Route != null &&
+                    x.Route.UserId == userId);
+
+            if (day == null)
+            {
+                return false;
+            }
+
+            var customPoint = day.RouteDayCustomPoints.FirstOrDefault(x => x.Id == customPointId);
+            if (customPoint == null)
+            {
+                return false;
+            }
+
+            var deletedOrder = customPoint.OrderInDay;
+
+            _dbContext.RouteDayCustomPoints.Remove(customPoint);
+
+            foreach (var block in day.RouteDayBlocks.Where(x => x.OrderInDay > deletedOrder))
+            {
+                block.OrderInDay--;
+            }
+
+            foreach (var point in day.RouteDayCustomPoints.Where(x => x.Id != customPointId && x.OrderInDay > deletedOrder))
+            {
+                point.OrderInDay--;
+            }
+
+            await _dbContext.SaveChangesAsync();
+            return true;
+        }
+
 
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Application.Data.DTO.Route.Read;
 using Application.Data.DTO.Route.Request;
 using Application.DTO.Route.Create;
+using Application.DTO.Route.Request;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -22,6 +23,27 @@ namespace Infrastructure.Services.Users
         Task<RouteResponseDTO?> AddBlockAsync(string userId, int routeId, int dayId, AddRouteDayBlockDTO dto);
         Task<RouteResponseDTO?> UpdateBlockAsync(string userId, int routeId, int dayId, int routeDayBlockId, UpdateRouteDayBlockDTO dto);
         Task<bool> DeleteBlockAsync(string userId, int routeId, int dayId, int routeDayBlockId);
+
+        Task<RouteResponseDTO?> AddCustomPointAsync(
+            string userId,
+            int routeId,
+            int dayId,
+            AddRouteDayCustomPointDTO dto);
+
+        Task<RouteResponseDTO?> UpdateCustomPointAsync(
+            string userId,
+            int routeId,
+            int dayId,
+            int customPointId,
+            UpdateRouteDayCustomPointDTO dto);
+
+        Task<bool> DeleteCustomPointAsync(
+            string userId,
+            int routeId,
+            int dayId,
+            int customPointId);
+
+
 
         Task<bool> LikeRouteAsync(string userId, int routeId);
         Task<bool> UnlikeRouteAsync(string userId, int routeId);

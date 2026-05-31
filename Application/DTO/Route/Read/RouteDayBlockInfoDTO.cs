@@ -4,7 +4,9 @@ namespace Application.Data.DTO.Route.Read
     public class RouteDayBlockInfoDTO
     {
         public int Id { get; set; }
-        public int BlockId { get; set; }
+        public int? BlockId { get; set; }
+        public bool IsCustom { get; set; }
+
         public int OrderInDay { get; set; }
         public string? Notes { get; set; }
 
