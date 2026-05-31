@@ -22,10 +22,12 @@ namespace Infrastructure.Services.Auth
         {
             response.Cookies.Delete(CookieName, new CookieOptions
             {
-                Path = "/",
+                HttpOnly = true,          
                 Secure = true,
-                SameSite = SameSiteMode.None
+                SameSite = SameSiteMode.None,
+                Path = "/"
             });
         }
+
     }
 }
