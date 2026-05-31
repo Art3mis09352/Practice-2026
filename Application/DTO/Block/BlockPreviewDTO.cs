@@ -24,5 +24,6 @@ namespace Application.DTO.Block
         public BlockStatus Status { get; set; }
         public string? PreviewPhotoUrl { get; set; }
         public int PhotosCount { get; set; }
+        public string? ModerationComment { get; set; }
     }
 }

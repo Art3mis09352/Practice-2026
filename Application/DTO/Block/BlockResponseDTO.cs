@@ -27,6 +27,12 @@ namespace Application.DTO.Block
         public int? PreviewPhotoId { get; set; }
         public string? PreviewPhotoUrl { get; set; }
 
+        public string? ModerationComment { get; set; }
+
+        public DateTime? ModeratedAt { get; set; }
+
+        public string? ModeratedByUserId { get; set; }
+
         public BlockStatus Status { get; set; }
         public IReadOnlyCollection<BlockPhotoDTO> Photos { get; set; } = Array.Empty<BlockPhotoDTO>();
         public IReadOnlyCollection<BlockDocumentDTO> Documents { get; set; } = Array.Empty<BlockDocumentDTO>();

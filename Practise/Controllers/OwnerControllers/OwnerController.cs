@@ -153,7 +153,10 @@ namespace Practice.Controllers.OwnerControllers
             block.AvgPrice = dto.AvgPrice ?? block.AvgPrice;
 
             block.Status = BlockStatus.Pending;
-            
+            block.ModerationComment = null;
+            block.ModeratedAt = null;
+            block.ModeratedByUserId = null;
+
             await _dbContext.SaveChangesAsync();
 
             
@@ -227,6 +230,9 @@ namespace Practice.Controllers.OwnerControllers
             }
 
             block.Status = BlockStatus.Pending;
+            block.ModerationComment = null;
+            block.ModeratedAt = null;
+            block.ModeratedByUserId = null;
             await _dbContext.SaveChangesAsync(cancellationToken);
 
             if (block.PreviewPhotoId == null)
@@ -277,6 +283,9 @@ namespace Practice.Controllers.OwnerControllers
             await _objectStorageService.DeleteBlockPhotoAsync(photo.ObjectName, cancellationToken);
 
             photo.Block.Status = BlockStatus.Pending;
+            photo.Block.ModerationComment = null;
+            photo.Block.ModeratedAt = null;
+            photo.Block.ModeratedByUserId = null;
             _dbContext.BlockPhotos.Remove(photo);
             if (wasPreview)
             {
@@ -366,6 +375,9 @@ namespace Practice.Controllers.OwnerControllers
 
             block.PreviewPhotoId = photoId;
             block.Status = BlockStatus.Pending;
+            block.ModerationComment = null;
+            block.ModeratedAt = null;
+            block.ModeratedByUserId = null;
 
             await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -440,6 +452,9 @@ namespace Practice.Controllers.OwnerControllers
             }
 
             block.Status = BlockStatus.Pending;
+            block.ModerationComment = null;
+            block.ModeratedAt = null;
+            block.ModeratedByUserId = null;
             await _dbContext.SaveChangesAsync(cancellationToken);
 
             return Ok(block.Documents
@@ -478,6 +493,10 @@ namespace Practice.Controllers.OwnerControllers
             await _objectStorageService.DeleteBlockDocumentAsync(document.ObjectName, cancellationToken);
 
             document.Block.Status = BlockStatus.Pending;
+            document.Block.ModerationComment = null;
+            document.Block.ModeratedAt = null;
+            document.Block.ModeratedByUserId = null;
+
             _dbContext.BlockDocuments.Remove(document);
             await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -507,6 +526,9 @@ namespace Practice.Controllers.OwnerControllers
                 Longitude = block.Longitude,
                 AvgPrice = block.AvgPrice,
                 Status = block.Status,
+                ModerationComment = block.ModerationComment,
+                ModeratedAt = block.ModeratedAt,
+                ModeratedByUserId = block.ModeratedByUserId,
                 PreviewPhotoId = previewPhoto?.Id,
                 PreviewPhotoUrl = previewPhoto == null
                     ? null

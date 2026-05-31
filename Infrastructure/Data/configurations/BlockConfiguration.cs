@@ -44,6 +44,13 @@ namespace Infrastructure.Data.configurations
             builder.Property(x => x.Status)
                  .HasConversion<int>()
                  .IsRequired();
+            builder.Property(x => x.ModerationComment)
+                 .HasMaxLength(2000);
+
+            builder.Property(x => x.ModeratedAt);
+
+            builder.Property(x => x.ModeratedByUserId)
+                .HasMaxLength(450);
 
             builder.HasIndex(x => x.City);
             builder.HasIndex(x => x.Category);

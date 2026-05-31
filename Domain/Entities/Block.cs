@@ -24,6 +24,12 @@ namespace Domain.Entities
         public decimal? AvgPrice { get; set; }
 
         public BlockStatus Status { get; set; } = BlockStatus.Pending;
+
+        public string? ModerationComment { get; set; }
+
+        public DateTime? ModeratedAt { get; set; }
+
+        public string? ModeratedByUserId { get; set; }
         public int? PreviewPhotoId { get; set; }
 
 

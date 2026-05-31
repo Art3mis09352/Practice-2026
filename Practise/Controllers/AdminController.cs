@@ -180,6 +180,10 @@ namespace Practice.Controllers
             if (block.Status != BlockStatus.Approved)
             {
                 block.Status = BlockStatus.Approved;
+                block.ModerationComment = null;
+                block.ModeratedAt = DateTime.UtcNow;
+                block.ModeratedByUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
                 await _dbContext.SaveChangesAsync();
             }
 
@@ -223,6 +227,9 @@ namespace Practice.Controllers
                 Longitude = block.Longitude,
                 AvgPrice = block.AvgPrice,
                 Status = block.Status,
+                ModerationComment = block.ModerationComment,
+                ModeratedAt = block.ModeratedAt,
+                ModeratedByUserId = block.ModeratedByUserId,
                 PreviewPhotoId = previewPhoto?.Id,
                 PreviewPhotoUrl = previewPhoto == null
                     ? null
@@ -280,7 +287,36 @@ namespace Practice.Controllers
             });
         }
 
+        [HttpPatch("blocks/{id:int}/reject")]
+        [SwaggerOperation(
+            Summary = "Отклонить точку",
+            Description = "Админ отклоняет точку и сохраняет причину отказа."
+        )]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> RejectBlock(int id, [FromBody] RejectBlockDTO dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Comment))
+            {
+                return BadRequest("Причина отказа обязательна.");
+            }
 
+            var block = await _dbContext.Blocks.FindAsync(id);
+            if (block == null)
+            {
+                return NotFound("Точка не найдена.");
+            }
+
+            block.Status = BlockStatus.Rejected;
+            block.ModerationComment = dto.Comment.Trim();
+            block.ModeratedAt = DateTime.UtcNow;
+            block.ModeratedByUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            await _dbContext.SaveChangesAsync();
+
+            return NoContent();
+        }
 
         private async Task<ActionResult> DeleteUserInternalAsync(string id)
         {
