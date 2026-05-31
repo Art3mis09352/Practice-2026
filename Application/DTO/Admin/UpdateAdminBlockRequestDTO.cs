@@ -1,9 +1,8 @@
-﻿// Data/DTO/Block/UpdateBlockRequestDTO.cs
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace Application.DTO.Block
+namespace Application.DTO.Admin
 {
-    public class UpdateBlockRequestDTO
+    public class UpdateAdminBlockRequestDTO
     {
         [MaxLength(200, ErrorMessage = "Название точки не должно превышать 200 символов")]
         public string? Title { get; set; }

@@ -210,49 +210,7 @@ namespace Practice.Controllers
                 return NotFound("Точка не найдена.");
             }
 
-            var orderedPhotos = block.Photos.OrderBy(p => p.Id).ToList();
-            var previewPhoto = orderedPhotos.FirstOrDefault(p => p.Id == block.PreviewPhotoId)
-                ?? orderedPhotos.FirstOrDefault();
-
-            return Ok(new BlockResponseDTO
-            {
-                Id = block.Id,
-                OwnerId = block.OwnerId,
-                Title = block.Title,
-                Description = block.Description,
-                Category = block.Category,
-                City = block.City,
-                Address = block.Address,
-                Latitude = block.Latitude,
-                Longitude = block.Longitude,
-                AvgPrice = block.AvgPrice,
-                Status = block.Status,
-                ModerationComment = block.ModerationComment,
-                ModeratedAt = block.ModeratedAt,
-                ModeratedByUserId = block.ModeratedByUserId,
-                PreviewPhotoId = previewPhoto?.Id,
-                PreviewPhotoUrl = previewPhoto == null
-                    ? null
-                    : _objectStorageService.GetBlockPhotoPublicUrl(previewPhoto.ObjectName),
-                            Photos = orderedPhotos
-                    .Select(p => new BlockPhotoDTO
-                    {
-                        Id = p.Id,
-                        Url = _objectStorageService.GetBlockPhotoPublicUrl(p.ObjectName)
-                    })
-                    .ToList(),
-                Documents = block.Documents
-                    .OrderBy(x => x.Id)
-                    .Select(x => new BlockDocumentDTO
-                    {
-                        Id = x.Id,
-                        OriginalFileName = x.OriginalFileName,
-                        ContentType = x.ContentType,
-                        Size = x.Size,
-                        CreatedAt = x.CreatedAt
-                    })
-                    .ToList()
-            });
+            return Ok(MapBlockResponse(block));
         }
 
         [HttpGet("blocks/{blockId:int}/documents/{documentId:int}/download-url")]
@@ -318,6 +276,43 @@ namespace Practice.Controllers
             return NoContent();
         }
 
+        [HttpPatch("blocks/{id:int}")]
+        [SwaggerOperation(
+            Summary = "Редактировать точку",
+            Description = "Админ редактирует данные точки."
+        )]
+        [ProducesResponseType(typeof(BlockResponseDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<BlockResponseDTO>> UpdateBlock(
+            int id,
+            [FromBody] UpdateAdminBlockRequestDTO dto,
+            CancellationToken cancellationToken)
+        {
+            var block = await _dbContext.Blocks
+                .Include(x => x.Photos)
+                .Include(x => x.Documents)
+                .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+            if (block == null)
+            {
+                return NotFound("Точка не найдена.");
+            }
+
+            block.Title = dto.Title ?? block.Title;
+            block.Description = dto.Description ?? block.Description;
+            block.Category = dto.Category ?? block.Category;
+            block.City = dto.City ?? block.City;
+            block.Address = dto.Address ?? block.Address;
+            block.Latitude = dto.Latitude ?? block.Latitude;
+            block.Longitude = dto.Longitude ?? block.Longitude;
+            block.AvgPrice = dto.AvgPrice ?? block.AvgPrice;
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            return Ok(MapBlockResponse(block));
+        }
+
+
         private async Task<ActionResult> DeleteUserInternalAsync(string id)
         {
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -356,6 +351,10 @@ namespace Practice.Controllers
             if (pendingOnly)
             {
                 query = query.Where(b => b.Status == BlockStatus.Pending);
+            }
+            else if (dto.Status.HasValue)
+            {
+                query = query.Where(b => b.Status == dto.Status.Value);
             }
 
             if (!string.IsNullOrWhiteSpace(dto.Search))
@@ -450,6 +449,54 @@ namespace Practice.Controllers
             {
                 await _dbContext.SaveChangesAsync();
             }
+        }
+
+
+        private BlockResponseDTO MapBlockResponse(Block block)
+        {
+            var orderedPhotos = block.Photos.OrderBy(p => p.Id).ToList();
+            var previewPhoto = orderedPhotos.FirstOrDefault(p => p.Id == block.PreviewPhotoId)
+                ?? orderedPhotos.FirstOrDefault();
+
+            return new BlockResponseDTO
+            {
+                Id = block.Id,
+                OwnerId = block.OwnerId,
+                Title = block.Title,
+                Description = block.Description,
+                Category = block.Category,
+                City = block.City,
+                Address = block.Address,
+                Latitude = block.Latitude,
+                Longitude = block.Longitude,
+                AvgPrice = block.AvgPrice,
+                Status = block.Status,
+                ModerationComment = block.ModerationComment,
+                ModeratedAt = block.ModeratedAt,
+                ModeratedByUserId = block.ModeratedByUserId,
+                PreviewPhotoId = previewPhoto?.Id,
+                PreviewPhotoUrl = previewPhoto == null
+                    ? null
+                    : _objectStorageService.GetBlockPhotoPublicUrl(previewPhoto.ObjectName),
+                Photos = orderedPhotos
+                    .Select(p => new BlockPhotoDTO
+                    {
+                        Id = p.Id,
+                        Url = _objectStorageService.GetBlockPhotoPublicUrl(p.ObjectName)
+                    })
+                    .ToList(),
+                Documents = block.Documents
+                    .OrderBy(x => x.Id)
+                    .Select(x => new BlockDocumentDTO
+                    {
+                        Id = x.Id,
+                        OriginalFileName = x.OriginalFileName,
+                        ContentType = x.ContentType,
+                        Size = x.Size,
+                        CreatedAt = x.CreatedAt
+                    })
+                    .ToList()
+            };
         }
     }
 }

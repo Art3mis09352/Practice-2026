@@ -28,7 +28,7 @@ namespace Application.DTO.Block
         [Required(ErrorMessage = "Долгота обязательна")]
         public decimal Longitude { get; set; }
 
-        [Range(0, 999999999.99, ErrorMessage = "Средняя цена должна быть положительной")]
+        [Range(0, 99999999.99, ErrorMessage = "Средняя цена должна быть положительной")]
         public decimal? AvgPrice { get; set; }
     }
 }
