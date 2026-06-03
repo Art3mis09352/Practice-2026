@@ -1,5 +1,6 @@
 ﻿using Application.DTO.Route.Create;
 using Domain.Entities;
+using Domain.Enums;
 
 namespace Tests.Unit.Helpers;
 
@@ -49,7 +50,7 @@ public static class RouteTestDataFactory
             OwnerId = "owner-1",
             Title = $"Block {id}",
             City = "Moscow",
-            IsApproved = true,
+            Status = Enum.Parse<BlockStatus>("Approved"),
             Latitude = 55.7558m,
             Longitude = 37.6173m
         };
@@ -63,9 +64,19 @@ public static class RouteTestDataFactory
             OwnerId = "owner-1",
             Title = $"Block {id}",
             City = "Moscow",
-            IsApproved = false,
+            Status = BlockStatus.Pending,
             Latitude = 55.7558m,
             Longitude = 37.6173m
+        };
+    }
+
+    public static User CreateUser(string id = "user-1")
+    {
+        return new User
+        {
+            Id = id,
+            UserName = id,
+            Email = $"{id}@example.com"
         };
     }
 }

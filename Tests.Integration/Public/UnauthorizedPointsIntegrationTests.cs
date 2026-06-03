@@ -32,7 +32,7 @@ public class UnauthorizedPointsIntegrationTests : IClassFixture<CustomWebApplica
 
         var block = await ApiTestHelper.ReadAsAsync<BlockResponseDTO>(response);
         Assert.Equal(401, block.Id);
-        Assert.True(block.IsApproved);
+        Assert.Equal(Domain.Enums.BlockStatus.Approved, block.Status);
     }
 
     [Fact]

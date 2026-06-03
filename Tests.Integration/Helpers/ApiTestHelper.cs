@@ -11,6 +11,7 @@ using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using AppUser = Domain.Entities.User;
 
 namespace Tests.Integration.Helpers;
@@ -21,7 +22,11 @@ public static class ApiTestHelper
 
     public static readonly JsonSerializerOptions JsonOptions = new()
     {
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
+        Converters =
+        {
+            new JsonStringEnumConverter()
+        }
     };
 
     public static HttpClient CreateClient(CustomWebApplicationFactory factory)

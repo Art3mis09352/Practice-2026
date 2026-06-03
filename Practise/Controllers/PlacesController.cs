@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 using System.Globalization;
 using System.Text.Json;
 
@@ -20,6 +21,10 @@ namespace Practice.Controllers.UnauthorizedControllers
         [HttpGet("nearby")]
         [ProducesResponseType(typeof(NearbyBusinessDTO), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [SwaggerOperation(
+            Summary = "поиск ближайшей точки",
+            Description = "Возвращает название, категорию и адрес ближайшей точки в радиусе 50 метров на основе предоставленных широты и долготы. Если точка не найдена или произошла ошибка, возвращает null."
+        )]
         public async Task<ActionResult<NearbyBusinessDTO?>> Nearby(
             [FromQuery] decimal lat,
             [FromQuery] decimal lng,

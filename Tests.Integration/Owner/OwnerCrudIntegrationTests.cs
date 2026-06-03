@@ -61,7 +61,7 @@ public class OwnerCrudIntegrationTests : IClassFixture<CustomWebApplicationFacto
         var block = await ApiTestHelper.ReadAsAsync<BlockResponseDTO>(response);
         Assert.Equal("Owner block", block.Title);
         Assert.Equal("Moscow", block.City);
-        Assert.False(block.IsApproved);
+        Assert.Equal(Domain.Enums.BlockStatus.Pending, block.Status);
     }
 
     [Fact]
@@ -145,7 +145,7 @@ public class OwnerCrudIntegrationTests : IClassFixture<CustomWebApplicationFacto
         Assert.Equal("Updated owner block", updated.Title);
         Assert.Equal("Saint Petersburg", updated.City);
         Assert.Equal(900, updated.AvgPrice);
-        Assert.False(updated.IsApproved);
+        Assert.Equal(Domain.Enums.BlockStatus.Pending, updated.Status);
     }
 
     [Fact]

@@ -1,4 +1,5 @@
 using Infrastructure.Data;
+using Infrastructure.Services.Email;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -62,6 +63,9 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Practice.Progra
                 options.UseInMemoryDatabase(_dbName);
             });
 
+            services.RemoveAll<IEmailSender>();
+            services.AddScoped<IEmailSender, FakeEmailSender>();
+
             var serviceProvider = services.BuildServiceProvider();
 
             using var scope = serviceProvider.CreateScope();
@@ -86,6 +90,14 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Practice.Progra
             {
                 await roleManager.CreateAsync(new IdentityRole(role));
             }
+        }
+    }
+
+    private sealed class FakeEmailSender : IEmailSender
+    {
+        public Task SendEmailAsync(string toEmail, string subject, string htmlBody)
+        {
+            return Task.CompletedTask;
         }
     }
 }

@@ -7,6 +7,8 @@ public static class RouteServiceSeedHelper
 {
     public static async Task<int> SeedRouteWithDaysAsync(AppDbContext db, string userId = "user-1")
     {
+        db.Users.Add(RouteTestDataFactory.CreateUser(userId));
+
         var route = new Route
         {
             UserId = userId,
@@ -40,6 +42,8 @@ public static class RouteServiceSeedHelper
 
     public static async Task<(int routeId, int dayId)> SeedRouteWithSingleDayAsync(AppDbContext db, string userId = "user-1")
     {
+        db.Users.Add(RouteTestDataFactory.CreateUser(userId));
+
         var route = new Route
         {
             UserId = userId,
@@ -65,6 +69,8 @@ public static class RouteServiceSeedHelper
 
     public static async Task<(int routeId, int dayId)> SeedRouteWithBlocksAsync(AppDbContext db, string userId = "user-1")
     {
+        db.Users.Add(RouteTestDataFactory.CreateUser(userId));
+
         var block1 = RouteTestDataFactory.CreateApprovedBlock(1);
         var block2 = RouteTestDataFactory.CreateApprovedBlock(2);
         var block3 = RouteTestDataFactory.CreateApprovedBlock(3);

@@ -1,23 +1,35 @@
 ﻿using Application.Data.DTO.Route.Request;
 using Infrastructure.Services.Users;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Tests.Unit.Helpers;
 
 namespace Tests.Unit.Services;
 
 public class UserRouteServiceDayTests
 {
+    private static IConfiguration CreateConfiguration()
+    {
+        return new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ShareLinks:PublicBaseUrl"] = "https://localhost",
+                ["ShareLinks:LifetimeDays"] = "30"
+            })
+            .Build();
+    }
     [Fact]
     public async Task AddDayAsync_Should_Add_New_Day()
     {
         using var db = TestDbContextFactory.Create();
+        var config = CreateConfiguration();
 
         var routeId = await RouteServiceSeedHelper.SeedRouteWithSingleDayAsync(db) switch
         {
             var x => x.routeId
         };
 
-        var service = new UserRouteService(db);
+        var service = new UserRouteService(db, config);
 
         var dto = new CreateRouteDayRequestDTO
         {
@@ -38,9 +50,10 @@ public class UserRouteServiceDayTests
     public async Task AddDayAsync_Should_Throw_When_DayNumber_Already_Exists()
     {
         using var db = TestDbContextFactory.Create();
+        var config = CreateConfiguration();
         var routeId = await RouteServiceSeedHelper.SeedRouteWithDaysAsync(db);
 
-        var service = new UserRouteService(db);
+        var service = new UserRouteService(db, config);
 
         var dto = new CreateRouteDayRequestDTO
         {
@@ -58,7 +71,8 @@ public class UserRouteServiceDayTests
     public async Task AddDayAsync_Should_Return_Null_When_Route_Not_Found()
     {
         using var db = TestDbContextFactory.Create();
-        var service = new UserRouteService(db);
+        var config = CreateConfiguration();
+        var service = new UserRouteService(db, config);
 
         var dto = new CreateRouteDayRequestDTO
         {
@@ -75,6 +89,7 @@ public class UserRouteServiceDayTests
     public async Task DeleteDayAsync_Should_Renumber_Following_Days()
     {
         using var db = TestDbContextFactory.Create();
+        var config = CreateConfiguration();
         var routeId = await RouteServiceSeedHelper.SeedRouteWithDaysAsync(db);
 
         var routeBefore = await db.Routes
@@ -83,7 +98,7 @@ public class UserRouteServiceDayTests
 
         var day2Id = routeBefore.Days.First(x => x.DayNumber == 2).Id;
 
-        var service = new UserRouteService(db);
+        var service = new UserRouteService(db, config);
 
         var deleted = await service.DeleteDayAsync("user-1", routeId, day2Id);
 
@@ -103,9 +118,10 @@ public class UserRouteServiceDayTests
     public async Task DeleteDayAsync_Should_Return_False_When_Day_Not_Found()
     {
         using var db = TestDbContextFactory.Create();
+        var config = CreateConfiguration();
         var routeId = await RouteServiceSeedHelper.SeedRouteWithDaysAsync(db);
 
-        var service = new UserRouteService(db);
+        var service = new UserRouteService(db, config);
 
         var result = await service.DeleteDayAsync("user-1", routeId, 999);
 

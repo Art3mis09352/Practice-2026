@@ -59,7 +59,7 @@ public class AdminCrudIntegrationTests : IClassFixture<CustomWebApplicationFacto
             var block = await db.Blocks.FindAsync(blockId);
 
             Assert.NotNull(block);
-            Assert.True(block!.IsApproved);
+            Assert.Equal(Domain.Enums.BlockStatus.Approved, block.Status);
         }
     }
 
@@ -160,7 +160,7 @@ public class AdminCrudIntegrationTests : IClassFixture<CustomWebApplicationFacto
         Assert.Equal(1, body.TotalCount);
         Assert.Single(body.Items);
         Assert.Equal("Hidden admin pending block", body.Items.Single().Title);
-        Assert.False(body.Items.Single().IsApproved);
+        Assert.Equal(Domain.Enums.BlockStatus.Pending, body.Items.Single().Status);
     }
 
     [Fact]

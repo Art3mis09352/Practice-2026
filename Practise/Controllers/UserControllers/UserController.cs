@@ -214,6 +214,10 @@ namespace Practice.Controllers.UserControllers
         [Authorize]
         [HttpPost("blocks/suggest")]
         [ProducesResponseType(typeof(BlockResponseDTO), StatusCodes.Status201Created)]
+        [SwaggerOperation(
+            Summary = "Предложить точку",
+            Description = "Позволяет авторизованному пользователю предложить новую точку для добавления в систему. Точка будет находиться в статусе 'Ожидает модерации' до тех пор, пока администратор не рассмотрит и не одобрит её."
+        )]
         public async Task<ActionResult<BlockResponseDTO>> SuggestBlock(
         [FromBody] SuggestBlockRequestDTO dto,
         CancellationToken cancellationToken)

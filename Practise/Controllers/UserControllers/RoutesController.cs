@@ -55,6 +55,10 @@ namespace Practice.Controllers.UserControllers
         [HttpGet("my")]
         [ProducesResponseType(typeof(PagedRoutesResponseDTO), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [SwaggerOperation(
+            Summary = "Получение маршрутов пользователя",
+            Description = "Возвращает список маршрутов, созданных текущим авторизованным пользователем, с поддержкой пагинации."
+        )]
         public async Task<ActionResult<PagedRoutesResponseDTO>> GetMyRoutes([FromQuery] GetRoutesQueryDTO dto)
         {
             var userId = GetUserId();
@@ -71,6 +75,10 @@ namespace Practice.Controllers.UserControllers
         [ProducesResponseType(typeof(RouteResponseDTO), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [SwaggerOperation(
+            Summary = "Получение маршрута пользователя",
+            Description = "Возвращает информацию о маршруте, созданном текущим авторизованным пользователем, по его идентификатору."
+        )]
         public async Task<ActionResult<RouteResponseDTO>> GetMyRoute(int routeId)
         {
             var userId = GetUserId();
@@ -93,6 +101,10 @@ namespace Practice.Controllers.UserControllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [SwaggerOperation(
+            Summary = "Обновление метаданных маршрута",
+            Description = "Позволяет текущему авторизованному пользователю обновить метаданные своего маршрута."
+        )]
         public async Task<ActionResult<RouteResponseDTO>> UpdateRouteMeta(int routeId, [FromBody] UpdateRouteMetaDTO dto)
         {
             var userId = GetUserId();
@@ -121,6 +133,10 @@ namespace Practice.Controllers.UserControllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [SwaggerOperation(
+            Summary = "Удаление маршрута",
+            Description = "Позволяет текущему авторизованному пользователю удалить свой маршрут по его идентификатору."
+        )]
         public async Task<IActionResult> DeleteRoute(int routeId)
         {
             var userId = GetUserId();
@@ -143,6 +159,10 @@ namespace Practice.Controllers.UserControllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [SwaggerOperation(
+            Summary = "Добавление дня в маршрут",
+            Description = "Позволяет текущему авторизованному пользователю добавить новый день в свой маршрут."
+        )]
         public async Task<ActionResult<RouteResponseDTO>> AddDay(int routeId, [FromBody] CreateRouteDayRequestDTO dto)
         {
             var userId = GetUserId();
@@ -172,6 +192,10 @@ namespace Practice.Controllers.UserControllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [SwaggerOperation(
+            Summary = "Обновление дня маршрута",
+            Description = "Позволяет текущему авторизованному пользователю обновить информацию о дне своего маршрута."
+        )]
         public async Task<ActionResult<RouteResponseDTO>> UpdateDay(int routeId, int dayId, [FromBody] UpdateRouteDayRequestDTO dto)
         {
             var userId = GetUserId();
@@ -200,6 +224,10 @@ namespace Practice.Controllers.UserControllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [SwaggerOperation(
+            Summary = "Удаление дня из маршрута",
+            Description = "Позволяет текущему авторизованному пользователю удалить день из своего маршрута."
+        )]
         public async Task<IActionResult> DeleteDay(int routeId, int dayId)
         {
             var userId = GetUserId();
@@ -222,6 +250,10 @@ namespace Practice.Controllers.UserControllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [SwaggerOperation(
+            Summary = "Добавление блока в день маршрута",
+            Description = "Позволяет текущему авторизованному пользователю добавить новый блок в день своего маршрута."
+        )]
         public async Task<ActionResult<RouteResponseDTO>> AddBlock(int routeId, int dayId, [FromBody] AddRouteDayBlockDTO dto)
         {
             var userId = GetUserId();
@@ -251,6 +283,10 @@ namespace Practice.Controllers.UserControllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [SwaggerOperation(
+            Summary = "Обновление блока в дне маршрута",
+            Description = "Позволяет текущему авторизованному пользователю обновить информацию о блоке в дне своего маршрута."
+        )]
         public async Task<ActionResult<RouteResponseDTO>> UpdateBlock(
             int routeId,
             int dayId,
@@ -283,6 +319,10 @@ namespace Practice.Controllers.UserControllers
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [SwaggerOperation(
+            Summary = "Удаление блока из дня маршрута",
+            Description = "Позволяет текущему авторизованному пользователю удалить блок из дня своего маршрута."
+        )]
         public async Task<IActionResult> DeleteBlock(int routeId, int dayId, int routeDayBlockId)
         {
             var userId = GetUserId();

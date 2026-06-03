@@ -1,22 +1,35 @@
 ﻿using Application.Data.DTO.Route.Request;
 using Infrastructure.Services.Users;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Tests.Unit.Helpers;
 
 namespace Tests.Unit.Services;
 
 public class UserRouteServiceBlockTests
 {
+    private static IConfiguration CreateConfiguration()
+    {
+        return new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ShareLinks:PublicBaseUrl"] = "https://localhost",
+                ["ShareLinks:LifetimeDays"] = "30"
+            })
+            .Build();
+    }
     [Fact]
     public async Task AddBlockAsync_Should_Insert_Block_And_Shift_Orders()
     {
         using var db = TestDbContextFactory.Create();
+        var configuration = CreateConfiguration();
+
         var (routeId, dayId) = await RouteServiceSeedHelper.SeedRouteWithBlocksAsync(db);
 
         db.Blocks.Add(RouteTestDataFactory.CreateApprovedBlock(10));
         await db.SaveChangesAsync();
 
-        var service = new UserRouteService(db);
+        var service = new UserRouteService(db, configuration);
 
         var dto = new AddRouteDayBlockDTO
         {
@@ -44,12 +57,13 @@ public class UserRouteServiceBlockTests
     public async Task AddBlockAsync_Should_Throw_When_OrderInDay_Is_Invalid()
     {
         using var db = TestDbContextFactory.Create();
+        var configuration = CreateConfiguration();
         var (routeId, dayId) = await RouteServiceSeedHelper.SeedRouteWithBlocksAsync(db);
 
         db.Blocks.Add(RouteTestDataFactory.CreateApprovedBlock(10));
         await db.SaveChangesAsync();
 
-        var service = new UserRouteService(db);
+        var service = new UserRouteService(db, configuration);
 
         var dto = new AddRouteDayBlockDTO
         {
@@ -67,6 +81,7 @@ public class UserRouteServiceBlockTests
     public async Task UpdateBlockAsync_Should_Reorder_Blocks()
     {
         using var db = TestDbContextFactory.Create();
+        var configuration = CreateConfiguration();
         var (routeId, dayId) = await RouteServiceSeedHelper.SeedRouteWithBlocksAsync(db);
 
         var routeDay = await db.RouteDays
@@ -75,7 +90,7 @@ public class UserRouteServiceBlockTests
 
         var firstBlock = routeDay.RouteDayBlocks.Single(x => x.OrderInDay == 1);
 
-        var service = new UserRouteService(db);
+        var service = new UserRouteService(db, configuration);
 
         var dto = new UpdateRouteDayBlockDTO
         {
@@ -98,6 +113,7 @@ public class UserRouteServiceBlockTests
     public async Task DeleteBlockAsync_Should_Decrease_Order_Of_Following_Blocks()
     {
         using var db = TestDbContextFactory.Create();
+        var configuration = CreateConfiguration();
         var (routeId, dayId) = await RouteServiceSeedHelper.SeedRouteWithBlocksAsync(db);
 
         var routeDay = await db.RouteDays
@@ -106,7 +122,7 @@ public class UserRouteServiceBlockTests
 
         var firstBlock = routeDay.RouteDayBlocks.Single(x => x.OrderInDay == 1);
 
-        var service = new UserRouteService(db);
+        var service = new UserRouteService(db, configuration);
 
         var deleted = await service.DeleteBlockAsync("user-1", routeId, dayId, firstBlock.Id);
 
@@ -126,9 +142,10 @@ public class UserRouteServiceBlockTests
     public async Task DeleteBlockAsync_Should_Return_False_When_Block_Not_Found()
     {
         using var db = TestDbContextFactory.Create();
+        var configuration = CreateConfiguration();
         var (routeId, dayId) = await RouteServiceSeedHelper.SeedRouteWithBlocksAsync(db);
 
-        var service = new UserRouteService(db);
+        var service = new UserRouteService(db, configuration);
 
         var result = await service.DeleteBlockAsync("user-1", routeId, dayId, 999);
 

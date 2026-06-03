@@ -23,7 +23,7 @@ public static class BlockSeedHelper
             Latitude = 55.7558m,
             Longitude = 37.6173m,
             AvgPrice = 1000,
-            IsApproved = true
+            Status = Domain.Enums.BlockStatus.Approved,
         };
 
         db.Blocks.Add(block);
@@ -49,7 +49,7 @@ public static class BlockSeedHelper
             Latitude = 55.7558m,
             Longitude = 37.6173m,
             AvgPrice = 1000,
-            IsApproved = false
+            Status = Domain.Enums.BlockStatus.Pending,
         };
 
         db.Blocks.Add(block);
