@@ -156,6 +156,13 @@ namespace Practice.Controllers
             {
                 await _objectStorageService.DeleteBlockDocumentAsync(document.ObjectName, cancellationToken);
             }
+
+            if (block.PreviewPhotoId != null)
+            {
+                block.PreviewPhotoId = null;
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+
             _dbContext.Blocks.Remove(block);
             await _dbContext.SaveChangesAsync();
 
@@ -440,6 +447,16 @@ namespace Practice.Controllers
                     {
                         await _objectStorageService.DeleteBlockDocumentAsync(document.ObjectName);
                     }
+                }
+
+                var blocksWithPreview = blocks.Where(b => b.PreviewPhotoId != null).ToList();
+                if (blocksWithPreview.Count > 0)
+                {
+                    foreach (var block in blocksWithPreview)
+                    {
+                        block.PreviewPhotoId = null;
+                    }
+                    await _dbContext.SaveChangesAsync();
                 }
 
                 _dbContext.Blocks.RemoveRange(blocks);

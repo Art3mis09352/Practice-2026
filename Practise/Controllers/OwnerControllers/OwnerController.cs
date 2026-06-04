@@ -334,6 +334,13 @@ namespace Practice.Controllers.OwnerControllers
             {
                 await _objectStorageService.DeleteBlockDocumentAsync(document.ObjectName, cancellationToken);
             }
+
+            if (block.PreviewPhotoId != null)
+            {
+                block.PreviewPhotoId = null;
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+
             _dbContext.Blocks.Remove(block);
             await _dbContext.SaveChangesAsync(cancellationToken);
 
